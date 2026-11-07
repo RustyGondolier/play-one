@@ -20,7 +20,7 @@ El sistema es una **herramienta interna de gestión** (1–2 usuarios) que reemp
 - **Backend:** Node.js + Express (ESM), PostgreSQL con `pg`
 - **Base de datos:** [Neon](https://neon.tech) (plan gratuito; no se pausa por inactividad)
 - **Deploy:** [Render](https://render.com) (plan gratuito)
-- **Frontend:** React + Vite (pendiente, carpeta `client/`)
+- **Frontend:** React 18 + Vite, react-router-dom, CSS puro (carpeta `client/`)
 
 ## Estructura
 
@@ -37,7 +37,14 @@ play-one/
 │  │   ├─ auth.js       # POST /api/auth/login
 │  │   └─ skus.js       # GET /api/skus
 │  └─ middleware/       # (pendiente)
-├─ client/              # React (pendiente)
+├─ client/              # React + Vite
+│  ├─ index.html
+│  ├─ vite.config.js    # proxy /api → :3001
+│  └─ src/
+│     ├─ App.jsx        # rutas protegidas
+│     ├─ api.js         # cliente fetch con token
+│     ├─ pages/         # Login, Dashboard, PedidoNuevo, Pedidos, EnvioPdf, Reportes
+│     └─ components/    # Layout (menú), AlertaBadge
 ├─ ml/                  # alerta predictiva (pendiente)
 ├─ docs/                # informes y evidencias
 ├─ .env.example         # plantilla de variables de entorno
@@ -71,7 +78,17 @@ npm run dev        # modo desarrollo (reinicia ante cambios)
 npm start          # modo producción
 ```
 
-### 4. Probar
+### 4. Frontend
+
+```bash
+cd client
+npm install
+npm run dev        # http://localhost:5173 (con proxy al backend)
+# o, para verlo junto al backend en el puerto 3001:
+npm run build      # Express sirve client/dist
+```
+
+### 5. Probar
 
 ```bash
 # Login (usuarios del seed)
