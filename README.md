@@ -1,0 +1,111 @@
+# Play One — Sistema de gestión operativa
+
+Prototipo web para la transformación digital de **Play One**, microempresa peruana de calzado deportivo que opera 100% en canales digitales (captación en TikTok → ventas en WhatsApp → despacho por agencia).
+
+El sistema es una **herramienta interna de gestión** (1–2 usuarios) que reemplaza el Excel y la hoja de envío manual con la que hoy opera el negocio.
+
+## Módulos
+
+| Módulo | Estado |
+|--------|--------|
+| Autenticación (propietario / ayudante) | ✅ base |
+| Inventario en tiempo real con alertas de stock mínimo | ✅ base (GET /api/skus) |
+| Registro de pedidos con baja automática de stock | ⏳ pendiente |
+| Hoja de envío en PDF | ⏳ pendiente |
+| Embudo de ventas (contactado → reservado → despachado → entregado) y auditoría de descuentos | ⏳ pendiente |
+| Reporte semanal + alerta predictiva de reposición (ML) | ⏳ pendiente |
+
+## Stack
+
+- **Backend:** Node.js + Express (ESM), PostgreSQL con `pg`
+- **Base de datos:** [Neon](https://neon.tech) (plan gratuito; no se pausa por inactividad)
+- **Deploy:** [Render](https://render.com) (plan gratuito)
+- **Frontend:** React + Vite (pendiente, carpeta `client/`)
+
+## Estructura
+
+```
+play-one/
+├─ server/
+│  ├─ index.js          # app Express (puerto 3001)
+│  ├─ package.json
+│  ├─ db/
+│  │   ├─ pool.js       # conexión a Neon (DATABASE_URL)
+│  │   ├─ schema.sql    # 9 tablas
+│  │   └─ seed.sql      # datos de prueba (90 SKU, 60 pedidos, 2 usuarios)
+│  ├─ routes/
+│  │   ├─ auth.js       # POST /api/auth/login
+│  │   └─ skus.js       # GET /api/skus
+│  └─ middleware/       # (pendiente)
+├─ client/              # React (pendiente)
+├─ ml/                  # alerta predictiva (pendiente)
+├─ docs/                # informes y evidencias
+├─ .env.example         # plantilla de variables de entorno
+└─ README.md
+```
+
+## Puesta en marcha
+
+### 1. Base de datos (Neon)
+
+1. Crea una cuenta en [console.neon.tech](https://console.neon.tech) y crea un proyecto (plan Free).
+2. Copia la **connection string** (busca `sslmode=require`).
+3. En el SQL Editor de Neon ejecuta primero `server/db/schema.sql` y luego `server/db/seed.sql`.
+
+### 2. Variables de entorno
+
+En la raíz del proyecto:
+
+```bash
+cp .env.example .env
+# edita .env y pega tu DATABASE_URL
+```
+
+### 3. Servidor
+
+```bash
+cd server
+npm install
+npm run dev        # modo desarrollo (reinicia ante cambios)
+# o
+npm start          # modo producción
+```
+
+### 4. Probar
+
+```bash
+# Login (usuarios del seed)
+curl -X POST http://localhost:3001/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"propietario","password":"playone2026"}'
+
+# Stock con alertas
+curl http://localhost:3001/api/skus
+```
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| POST | `/api/auth/login` | Devuelve un token JWT (8 h) |
+| GET | `/api/skus` | Lista los 90 SKU con `alerta: true` si el stock está bajo el mínimo |
+
+## Usuarios de prueba (seed)
+
+| Identificador (`email`) | Contraseña | Rol |
+|---------|------------|-----|
+| `propietario` | playone2026 | propietario |
+| `ayudante` | playone2026 | ayudante |
+
+> No hay dominio propio ni verificación de correo: el campo `email` se usa como usuario simple.
+
+## Cronograma (Avance 3 — Semana 15)
+
+| Semana | Entregable |
+|--------|------------|
+| 12 | Auth + dashboard de stock con alertas |
+| 13 | Registro de pedidos con baja de stock |
+| 14 | PDF de envío + kanban del embudo + descuentos auditados |
+| 15 | Reporte semanal + alerta ML + deploy en Render + demo + informe |
+
+## Contexto académico
+
+Innovación y Transformación Digital — Grupo 7, Ingeniería de Sistemas e Informática (UNSA, 2026). Avance de Proyecto Final 3.
