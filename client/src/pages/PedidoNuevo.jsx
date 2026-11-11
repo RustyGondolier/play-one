@@ -1,136 +1,191 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import api from '../api.js';
 
-const TIPOS_DESCUENTO = [
-  { valor: 'transmision', label: 'Por transmisión (live)' },
-  { valor: 'talla_exclusiva', label: 'Talla exclusiva' },
-  { valor: 'modelo_unico', label: 'Modelo único' },
-];
+const VACIO_CLIENTE = {
+  nombre: '',
+  dni: '',
+  celular: '',
+  distrito_destino: '',
+  agencia: 'Olva Courier',
+};
 
 export default function PedidoNuevo() {
+  const [modelos, setModelos] = useState([]);
   const [skus, setSkus] = useState([]);
   const [error, setError] = useState('');
-  const [mensaje, setMensaje] = useState('');
-  const [enviando, setEnviando] = useState('');
+  const [exito, setExito] = useState('');
+  const [enviando, setEnviando] = useState(false);
+  const [clienteExistente, setClienteExistente] = useState(null); // null = sin buscar, true/false
 
-  const [formulario, setFormulario] = useState({
-    nombre: '',
-    dni: '',
-    celular: '',
-    distrito_destino: '',
-    agencia: 'Olva Courier',
-    sku_id: '',
-    precio: '',
-    tipo_descuento: 'transmision',
-    monto_descuento: '',
-  });
+  const [cliente, setCliente] = useState(VACIO_CLIENTE);
+  const [modeloId, setModeloId] = useState('');
+  const [skuId, setSkuId] = useState('');
+  const [descuento, setDescuento] = useState('');
 
   useEffect(() => {
-    api.get('/skus').then(setSkus).catch((err) => setError(err.message));
+    Promise.all([api.get('/modelos'), api.get('/skus')])
+      .then(([m, s]) => {
+        setModelos(m);
+        setSkus(s);
+      })
+      .catch((err) => setError(err.message));
   }, []);
 
-  const modelos = useMemo(() => {
-    const map = new Map();
-    skus.forEach((s) => {
-      if (!map.has(s.modelo)) map.set(s.modelo, []);
-      map.get(s.modelo).push(s);
-    });
-    return [...map.entries()].map(([nombre, lista]) => ({
-      nombre,
-      skus: lista.sort((a, b) => Number(a.talla) - Number(b.talla)),
-    }));
-  }, [skus]);
+  // Tallas disponibles del modelo elegido (ordenadas de menor a mayor)
+  const tallasDelModelo = useMemo(
+    () =>
+      skus
+        .filter((s) => String(s.modelo_id) === String(modeloId))
+        .sort((a, b) => Number(a.talla) - Number(b.talla)),
+    [skus, modeloId]
+  );
 
-  function cambiar(campo, valor) {
-    setFormulario((f) => ({ ...f, [campo]: valor }));
+  const modeloSel = modelos.find((m) => String(m.id) === String(modeloId));
+  const precio = Number(modeloSel?.precio_base || 0);
+  const desc = Number(descuento || 0);
+  const total = Math.max(precio - desc, 0);
+
+  function cambiarCliente(campo, valor) {
+    setCliente((c) => ({ ...c, [campo]: valor }));
+    if (campo === 'dni') setClienteExistente(null);
   }
 
-  async function handleSubmit(e) {
-    e.preventDefault();
-    setError('');
-    setMensaje('');
-    setEnviando('registrando…');
+  // Al salir del campo DNI: buscar si el cliente ya está registrado
+  async function buscarPorDni() {
+    const dni = cliente.dni.trim();
+    if (!/^\d{8}$/.test(dni)) return;
     try {
-      const pedido = await api.post('/pedidos', {
-        ...formulario,
-        sku_id: Number(formulario.sku_id),
-        precio: Number(formulario.precio),
-        monto_descuento: Number(formulario.monto_descuento || 0),
+      const c = await api.get(`/clientes/${dni}`);
+      setCliente({
+        nombre: c.nombre,
+        dni: c.dni,
+        celular: c.celular,
+        distrito_destino: c.distrito_destino,
+        agencia: c.agencia,
       });
-      setMensaje(`Pedido #${pedido.id} registrado. Se descontó el stock.`);
-      e.target.reset();
-    } catch (err) {
-      setError(`${err.message} — el endpoint se conecta en la semana 13.`);
-    } finally {
-      setEnviando('');
+      setClienteExistente(true);
+      setError('');
+    } catch {
+      setClienteExistente(false); // cliente nuevo: hay que completar los datos
     }
   }
+
+  function cambiarModelo(id) {
+    setModeloId(id);
+    setSkuId('');
+  }
+
+  async function enviar(e) {
+    e.preventDefault();
+    setError('');
+    setExito('');
+
+    if (!skuId) return setError('Selecciona la talla del producto');
+    if (desc > precio) return setError('El descuento no puede superar el precio del producto');
+    if (clienteExistente === false && (!cliente.nombre || !cliente.celular)) {
+      return setError('Cliente nuevo: completa nombre, celular, destino y agencia');
+    }
+
+    setEnviando(true);
+    try {
+      const r = await api.post('/pedidos', {
+        ...cliente,
+        dni: cliente.dni.trim(),
+        sku_id: Number(skuId),
+        descuento: desc,
+      });
+      setExito(`Pedido #${r.pedido.id} registrado. Stock descontado.`);
+      setCliente(VACIO_CLIENTE);
+      setClienteExistente(null);
+      setModeloId('');
+      setSkuId('');
+      setDescuento('');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setEnviando(false);
+    }
+  }
+
+  const avisoCliente =
+    clienteExistente === true
+      ? 'Cliente ya registrado: sus datos se cargaron automáticamente.'
+      : clienteExistente === false
+        ? 'DNI nuevo: completa los datos para registrarlo.'
+        : null;
 
   return (
     <>
       <header className="pagina-titulo">
         <div>
           <h1>Registro de pedido</h1>
-          <p>El formulario valida los datos antes de descontar el stock</p>
+          <p>Precio tomado del producto · descuento opcional de monto fijo</p>
         </div>
       </header>
 
-      <div className="alerta alerta-info">
-        Formulario operativo: al enviarlo llamará a <code>POST /api/pedidos</code> (pendiente hasta la semana 13).
-      </div>
-
       {error && <div className="alerta alerta-error">{error}</div>}
-      {mensaje && <div className="alerta alerta-exito">{mensaje}</div>}
+      {exito && (
+        <div className="alerta alerta-exito">
+          {exito} <Link to="/pedidos">Ver pedidos →</Link>
+        </div>
+      )}
 
-      <form className="formulario" onSubmit={handleSubmit}>
+      <form className="formulario" onSubmit={enviar}>
         <fieldset>
-          <legend>Datos del cliente</legend>
+          <legend>Cliente — busca por DNI</legend>
           <div className="campo-grid">
-            <label>
-              Nombre y apellido *
-              <input
-                type="text"
-                value={formulario.nombre}
-                onChange={(e) => cambiar('nombre', e.target.value)}
-                required
-              />
-            </label>
             <label>
               DNI *
               <input
                 type="text"
                 pattern="\d{8}"
                 title="Debe tener 8 dígitos"
-                value={formulario.dni}
-                onChange={(e) => cambiar('dni', e.target.value)}
+                placeholder="Ej. 45678912"
+                value={cliente.dni}
+                onChange={(e) => cambiarCliente('dni', e.target.value)}
+                onBlur={buscarPorDni}
                 required
               />
             </label>
             <label>
-              Celular *
+              Nombre y apellido {clienteExistente ? '' : '*'}
+              <input
+                type="text"
+                value={cliente.nombre}
+                onChange={(e) => cambiarCliente('nombre', e.target.value)}
+                disabled={clienteExistente === true}
+                required={clienteExistente !== true}
+              />
+            </label>
+            <label>
+              Celular {clienteExistente ? '' : '*'}
               <input
                 type="tel"
                 pattern="\d{9}"
                 title="Debe tener 9 dígitos"
-                value={formulario.celular}
-                onChange={(e) => cambiar('celular', e.target.value)}
-                required
+                value={cliente.celular}
+                onChange={(e) => cambiarCliente('celular', e.target.value)}
+                disabled={clienteExistente === true}
+                required={clienteExistente !== true}
               />
             </label>
             <label>
-              Destino (distrito) *
+              Destino (distrito) {clienteExistente ? '' : '*'}
               <input
                 type="text"
-                value={formulario.distrito_destino}
-                onChange={(e) => cambiar('distrito_destino', e.target.value)}
-                required
+                value={cliente.distrito_destino}
+                onChange={(e) => cambiarCliente('distrito_destino', e.target.value)}
+                disabled={clienteExistente === true}
+                required={clienteExistente !== true}
               />
             </label>
             <label>
               Agencia de transporte *
               <select
-                value={formulario.agencia}
-                onChange={(e) => cambiar('agencia', e.target.value)}
+                value={cliente.agencia}
+                onChange={(e) => cambiarCliente('agencia', e.target.value)}
+                disabled={clienteExistente === true}
               >
                 <option>Olva Courier</option>
                 <option>Shalom</option>
@@ -138,78 +193,72 @@ export default function PedidoNuevo() {
               </select>
             </label>
           </div>
+          {avisoCliente && (
+            <small className={`nota ${clienteExistente ? 'nota-exito' : ''}`}>{avisoCliente}</small>
+          )}
         </fieldset>
 
         <fieldset>
           <legend>Producto</legend>
           <div className="campo-grid">
             <label>
-              Modelo y talla *
-              <select
-                value={formulario.sku_id}
-                onChange={(e) => cambiar('sku_id', e.target.value)}
-                required
-              >
+              Modelo *
+              <select value={modeloId} onChange={(e) => cambiarModelo(e.target.value)} required>
                 <option value="">— Selecciona —</option>
-                {modelos.map(({ nombre, skus: lista }) => (
-                  <optgroup key={nombre} label={nombre}>
-                    {lista.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        Talla {s.talla} — stock {s.stock_actual}
-                      </option>
-                    ))}
-                  </optgroup>
+                {modelos.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.nombre} ({m.categoria})
+                  </option>
                 ))}
               </select>
             </label>
             <label>
-              Precio (S/) *
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={formulario.precio}
-                onChange={(e) => cambiar('precio', e.target.value)}
-                required
-              />
-            </label>
-          </div>
-        </fieldset>
-
-        <fieldset>
-          <legend>Descuento aplicado en el live</legend>
-          <div className="campo-grid">
-            <label>
-              Tipo de descuento
+              Talla *
               <select
-                value={formulario.tipo_descuento}
-                onChange={(e) => cambiar('tipo_descuento', e.target.value)}
+                value={skuId}
+                onChange={(e) => setSkuId(e.target.value)}
+                disabled={!modeloId}
+                required
               >
-                {TIPOS_DESCUENTO.map((t) => (
-                  <option key={t.valor} value={t.valor}>{t.label}</option>
+                <option value="">
+                  {modeloId ? '— Selecciona —' : 'Elige primero el modelo'}
+                </option>
+                {tallasDelModelo.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.talla} (stock {s.stock_actual})
+                  </option>
                 ))}
               </select>
             </label>
             <label>
-              Monto (S/)
+              Precio del producto
+              <input type="text" value={precio ? `S/ ${precio.toFixed(2)}` : ''} disabled />
+            </label>
+            <label>
+              Descuento (S/, opcional)
               <input
                 type="number"
                 step="0.01"
                 min="0"
-                value={formulario.monto_descuento}
-                onChange={(e) => cambiar('monto_descuento', e.target.value)}
+                max={precio}
                 placeholder="0.00"
+                value={descuento}
+                onChange={(e) => setDescuento(e.target.value)}
               />
             </label>
           </div>
           <small className="nota">
-            El descuento queda auditado por pedido: reemplaza la captura de pantalla.
+            {precio > 0
+              ? desc > 0
+                ? `Total del pedido: S/ ${total.toFixed(2)} (precio S/ ${precio.toFixed(2)} − descuento S/ ${desc.toFixed(2)})`
+                : `Total del pedido: S/ ${precio.toFixed(2)} — sin descuento`
+              : 'El precio viene guardado con el producto registrado.'}
           </small>
         </fieldset>
 
         <div className="formulario-acciones">
-          <button className="btn btn-primario" type="submit" disabled={!!enviando}>
-            {enviando || 'Registrar pedido y descontar stock'}
+          <button className="btn btn-primario" type="submit" disabled={enviando}>
+            {enviando ? 'Registrando…' : 'Registrar pedido y descontar stock'}
           </button>
         </div>
       </form>

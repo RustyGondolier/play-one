@@ -637,6 +637,56 @@ legend {
   font-size: 14px;
 }
 
+.acciones-titulo {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.acciones-titulo .btn {
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.tallas-check {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.talla-opcion {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  padding: 7px 12px;
+  cursor: pointer;
+  font-weight: 600;
+  background: #fff;
+}
+
+.talla-opcion input {
+  accent-color: var(--primario);
+}
+
+.talla-opcion.activa {
+  border-color: var(--primario);
+  background: var(--primario-suave);
+  color: var(--primario-oscuro);
+}
+
+.nota-exito {
+  color: var(--verde);
+  font-weight: 600;
+}
+
+.alerta a {
+  color: inherit;
+  font-weight: 700;
+}
+
 /* ---------------- Responsive ---------------- */
 @media (max-width: 900px) {
   .layout {

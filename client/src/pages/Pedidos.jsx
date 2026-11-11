@@ -50,7 +50,7 @@ export default function Pedidos() {
           lista.map((p) => (p.id === pedido.id ? { ...p, estado: nuevo } : p))
         )
       )
-      .catch((err) => setError(`${err.message} — el endpoint se conecta en la semana 14.`));
+      .catch((err) => setError(err.message));
   }
 
   return (
