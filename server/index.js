@@ -1,4 +1,4 @@
-import 'dotenv/config';
+import './env.js'; // debe ir primero: carga .env antes de crear el pool de BD
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
