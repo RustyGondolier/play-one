@@ -35,7 +35,7 @@ try {
            (SELECT count(*) FROM skus WHERE stock_actual < stock_minimo) AS en_alerta,
            (SELECT count(*) FROM clientes)   AS clientes,
            (SELECT count(*) FROM pedidos)    AS pedidos,
-           (SELECT count(*) FROM descuentos) AS descuentos,
+           (SELECT count(*) FROM pedidos WHERE descuento > 0) AS con_descuento,
            (SELECT count(*) FROM envios)     AS envios
   `);
   console.log('✔ Base de datos lista:', rows[0]);

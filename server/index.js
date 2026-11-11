@@ -5,6 +5,9 @@ import express from 'express';
 import cors from 'cors';
 import authRoutes from './routes/auth.js';
 import skusRoutes from './routes/skus.js';
+import modelosRoutes from './routes/modelos.js';
+import clientesRoutes from './routes/clientes.js';
+import pedidosRoutes from './routes/pedidos.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -16,6 +19,9 @@ app.use(express.json());
 // Rutas de la API
 app.use('/api/auth', authRoutes);
 app.use('/api/skus', skusRoutes);
+app.use('/api/modelos', modelosRoutes);
+app.use('/api/clientes', clientesRoutes);
+app.use('/api/pedidos', pedidosRoutes);
 
 // Health check (útil para Render)
 app.get('/api/health', (req, res) => {

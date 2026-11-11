@@ -4,7 +4,7 @@
 -- ============================================================
 
 DROP TABLE IF EXISTS envios CASCADE;
-DROP TABLE IF EXISTS descuentos CASCADE;
+DROP TABLE IF EXISTS descuentos CASCADE;   -- tabla eliminada: el descuento vive en pedidos
 DROP TABLE IF EXISTS estados_pedido CASCADE;
 DROP TABLE IF EXISTS pedidos CASCADE;
 DROP TABLE IF EXISTS movimientos_stock CASCADE;
@@ -24,7 +24,8 @@ CREATE TABLE usuarios (
   creado_en     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Modelos de calzado (catálogo)
+-- Modelos de zapatillas de fútbol (única línea de negocio de Play One)
+-- El precio se guarda aquí, con el producto (precio_base)
 CREATE TABLE modelos (
   id          SERIAL PRIMARY KEY,
   nombre      VARCHAR(100) NOT NULL UNIQUE,
@@ -65,12 +66,14 @@ CREATE TABLE clientes (
   creado_en        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Pedidos
+-- Pedidos (el precio vive en el producto: modelos.precio_base;
+-- el descuento es opcional, monto fijo en soles)
 CREATE TABLE pedidos (
   id         SERIAL PRIMARY KEY,
   cliente_id INTEGER NOT NULL REFERENCES clientes(id),
   sku_id     INTEGER NOT NULL REFERENCES skus(id),
   precio     NUMERIC(10,2) NOT NULL CHECK (precio >= 0),
+  descuento  NUMERIC(10,2) NOT NULL DEFAULT 0 CHECK (descuento >= 0),
   estado     VARCHAR(20) NOT NULL DEFAULT 'contactado'
              CHECK (estado IN ('contactado', 'reservado', 'despachado', 'entregado')),
   creado_en  TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -87,17 +90,6 @@ CREATE TABLE estados_pedido (
               CHECK (estado IN ('contactado', 'reservado', 'despachado', 'entregado')),
   fecha       TIMESTAMPTZ NOT NULL DEFAULT now(),
   usuario_id  INTEGER REFERENCES usuarios(id)
-);
-
--- Descuentos aplicados en los lives de TikTok (reemplazan la captura de pantalla)
-CREATE TABLE descuentos (
-  id           SERIAL PRIMARY KEY,
-  pedido_id    INTEGER NOT NULL UNIQUE REFERENCES pedidos(id),
-  tipo         VARCHAR(30) NOT NULL
-               CHECK (tipo IN ('transmision', 'talla_exclusiva', 'modelo_unico')),
-  monto        NUMERIC(10,2) NOT NULL CHECK (monto >= 0),
-  fecha_live   DATE NOT NULL,
-  evidencia_url TEXT                          -- URL opcional de la captura de respaldo
 );
 
 -- Hojas de envío generadas en PDF

@@ -1,5 +1,5 @@
 -- ============================================================
--- Play One — Datos de prueba
+-- Play One — Datos de prueba (zapatillas de fútbol)
 -- Ejecutar DESPUÉS de schema.sql
 -- ============================================================
 
@@ -16,24 +16,25 @@ INSERT INTO usuarios (nombre, email, password_hash, rol) VALUES
    'ayudante');
 
 -- ------------------------------------------------------------
--- 2. Catálogo: 15 modelos
+-- 2. Catálogo: 15 modelos de zapatillas de fútbol
+--    (el precio se guarda con el producto)
 -- ------------------------------------------------------------
 INSERT INTO modelos (nombre, categoria, precio_base) VALUES
-  ('Runner Pro 90',      'running',  129.90),
-  ('Sprint Flow',        'running',  119.90),
-  ('Marathon Elite',     'running',  159.90),
-  ('Cloud Cushion',      'running',  139.90),
-  ('Trail Grip',         'running',  149.90),
-  ('Street Classic',     'urbano',    99.90),
-  ('Urban High',         'urbano',   119.90),
-  ('Retro Court',        'urbano',   109.90),
-  ('Skate Board',        'urbano',   105.90),
-  ('Canvas Low',         'urbano',    79.90),
-  ('Train X',            'training', 125.90),
-  ('Lift Support',       'training', 135.90),
-  ('Flex Step',          'training', 115.90),
-  ('Cross Fit One',      'training', 145.90),
-  ('Kids Runner',        'kids',      69.90);
+  ('Thunder Strike FG',   'césped natural', 149.90),
+  ('Lightning Pro FG',    'césped natural', 159.90),
+  ('Falcon Grip FG',      'césped natural', 139.90),
+  ('Elite Carbon FG',     'césped natural', 189.90),
+  ('Titan Power FG',      'césped natural', 169.90),
+  ('Viper Cut AG',        'césped artificial', 129.90),
+  ('Razor Speed AG',      'césped artificial', 139.90),
+  ('Eagle Control AG',    'césped artificial', 125.90),
+  ('Storm Play AG',       'césped artificial', 119.90),
+  ('Nitro Turf Sala',     'indoor', 109.90),
+  ('Arena Court Indoor',  'indoor', 99.90),
+  ('Futsal Pro Court',    'futsal', 95.90),
+  ('Street Futsal Low',   'futsal', 89.90),
+  ('Junior Speed AG',     'futsal', 85.90),
+  ('Kids Kick FG',        'futsal', 79.90);
 
 -- ------------------------------------------------------------
 -- 3. Stock: 90 SKU (15 modelos × 6 tallas, 37-42)
@@ -69,11 +70,13 @@ INSERT INTO clientes (nombre, dni, celular, distrito_destino, agencia) VALUES
 
 -- ------------------------------------------------------------
 -- 6. 60 pedidos de prueba con su estado del embudo
+--    (descuento opcional: monto fijo en soles, 0 si no aplica)
 -- ------------------------------------------------------------
-INSERT INTO pedidos (cliente_id, sku_id, precio, estado, creado_en)
+INSERT INTO pedidos (cliente_id, sku_id, precio, descuento, estado, creado_en)
 SELECT 1 + (g % 8) AS cliente_id,
        s.id        AS sku_id,
        m.precio_base AS precio,
+       CASE WHEN g % 3 = 0 THEN ((g % 4) + 1) * 5.00 ELSE 0 END AS descuento,
        CASE WHEN g % 10 IN (0, 1) THEN 'contactado'
             WHEN g % 10 IN (2, 3) THEN 'reservado'
             WHEN g % 10 IN (4, 5) THEN 'despachado'
@@ -105,20 +108,7 @@ SELECT p.id, 'entregado', p.creado_en + interval '4 days', 1
   FROM pedidos p WHERE p.estado = 'entregado';
 
 -- ------------------------------------------------------------
--- 8. Descuentos aplicados en lives (2 de cada 3 pedidos)
--- ------------------------------------------------------------
-INSERT INTO descuentos (pedido_id, tipo, monto, fecha_live)
-SELECT p.id,
-       CASE WHEN p.id % 7 = 0 THEN 'talla_exclusiva'
-            WHEN p.id % 7 = 1 THEN 'modelo_unico'
-            ELSE 'transmision' END,
-       (p.id % 4 + 1) * 5.00,          -- S/ 5 a S/ 20
-       p.creado_en::date
-  FROM pedidos p
- WHERE p.id % 3 = 0;
-
--- ------------------------------------------------------------
--- 9. Envíos (para pedidos despachados y entregados)
+-- 8. Envíos (para pedidos despachados y entregados)
 -- ------------------------------------------------------------
 INSERT INTO envios (pedido_id, codigo, agencia, generado_en)
 SELECT p.id,
@@ -130,11 +120,11 @@ SELECT p.id,
  WHERE p.estado IN ('despachado', 'entregado');
 
 -- Resumen
-SELECT (SELECT count(*) FROM usuarios)  AS usuarios,
-       (SELECT count(*) FROM modelos)   AS modelos,
-       (SELECT count(*) FROM skus)      AS skus,
+SELECT (SELECT count(*) FROM usuarios)   AS usuarios,
+       (SELECT count(*) FROM modelos)    AS modelos,
+       (SELECT count(*) FROM skus)       AS skus,
        (SELECT count(*) FROM skus WHERE stock_actual < stock_minimo) AS skus_en_alerta,
-       (SELECT count(*) FROM clientes)  AS clientes,
-       (SELECT count(*) FROM pedidos)   AS pedidos,
-       (SELECT count(*) FROM descuentos) AS descuentos,
-       (SELECT count(*) FROM envios)    AS envios;
+       (SELECT count(*) FROM clientes)   AS clientes,
+       (SELECT count(*) FROM pedidos)    AS pedidos,
+       (SELECT count(*) FROM pedidos WHERE descuento > 0) AS con_descuento,
+       (SELECT count(*) FROM envios)     AS envios;
