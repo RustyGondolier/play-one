@@ -1,6 +1,6 @@
 # Play One — Sistema de gestión operativa
 
-Prototipo web para la transformación digital de **Play One**, microempresa peruana de calzado deportivo que opera 100% en canales digitales (captación en TikTok → ventas en WhatsApp → despacho por agencia).
+Prototipo web para la transformación digital de **Play One**, microempresa peruana que vende **zapatillas de fútbol** por canales digitales (captación en TikTok → ventas en WhatsApp → despacho por agencia).
 
 El sistema es una **herramienta interna de gestión** (1–2 usuarios) que reemplaza el Excel y la hoja de envío manual con la que hoy opera el negocio.
 
@@ -8,11 +8,14 @@ El sistema es una **herramienta interna de gestión** (1–2 usuarios) que reemp
 
 | Módulo | Estado |
 |--------|--------|
-| Autenticación (propietario / ayudante) | ✅ base |
-| Inventario en tiempo real con alertas de stock mínimo | ✅ base (GET /api/skus) |
-| Registro de pedidos con baja automática de stock | ⏳ pendiente |
+| Autenticación (propietario / ayudante) | ✅ |
+| Inventario en tiempo real con alertas de stock mínimo | ✅ |
+| Reposición de stock (entrada de mercadería con registro) | ✅ |
+| Registro de productos nuevos (modelo, categoría, precio, tallas) | ✅ |
+| Directorio de clientes con detección por DNI | ✅ |
+| Registro de pedidos (precio del producto, descuento opcional fijo, baja de stock) | ✅ |
+| Embudo de ventas (contactado → reservado → despachado → entregado) | ✅ |
 | Hoja de envío en PDF | ⏳ pendiente |
-| Embudo de ventas (contactado → reservado → despachado → entregado) y auditoría de descuentos | ⏳ pendiente |
 | Reporte semanal + alerta predictiva de reposición (ML) | ⏳ pendiente |
 
 ## Stack
@@ -35,7 +38,10 @@ play-one/
 │  │   └─ seed.sql      # datos de prueba (90 SKU, 60 pedidos, 2 usuarios)
 │  ├─ routes/
 │  │   ├─ auth.js       # POST /api/auth/login
-│  │   └─ skus.js       # GET /api/skus
+│  │   ├─ skus.js       # GET /api/skus, POST /api/skus/:id/reponer
+│  │   ├─ modelos.js    # GET/POST /api/modelos
+│  │   ├─ clientes.js   # GET/POST /api/clientes, GET /api/clientes/:dni
+│  │   └─ pedidos.js    # GET/POST /api/pedidos, PATCH /api/pedidos/:id/estado
 │  └─ middleware/       # (pendiente)
 ├─ client/              # React + Vite
 │  ├─ index.html
@@ -43,7 +49,8 @@ play-one/
 │  └─ src/
 │     ├─ App.jsx        # rutas protegidas
 │     ├─ api.js         # cliente fetch con token
-│     ├─ pages/         # Login, Dashboard, PedidoNuevo, Pedidos, EnvioPdf, Reportes
+│     ├─ pages/         # Login, Dashboard, PedidoNuevo, Pedidos, EnvioPdf,
+│     │                 # Reportes, Clientes, ProductoNuevo
 │     └─ components/    # Layout (menú), AlertaBadge
 ├─ ml/                  # alerta predictiva (pendiente)
 ├─ docs/                # informes y evidencias
@@ -103,7 +110,16 @@ curl http://localhost:3001/api/skus
 | Método | Ruta | Descripción |
 |--------|------|-------------|
 | POST | `/api/auth/login` | Devuelve un token JWT (8 h) |
-| GET | `/api/skus` | Lista los 90 SKU con `alerta: true` si el stock está bajo el mínimo |
+| GET | `/api/skus` | Los 90 SKU con precio del producto y `alerta` si está bajo el mínimo |
+| POST | `/api/skus/:id/reponer` | Añade stock y registra el movimiento de entrada |
+| GET | `/api/modelos` | Catálogo de productos con precio y stock total |
+| POST | `/api/modelos` | Registra un producto nuevo con sus tallas y stock inicial |
+| GET | `/api/clientes` | Directorio de clientes con su cantidad de pedidos |
+| GET | `/api/clientes/:dni` | Busca un cliente por DNI (detecta clientes ya registrados) |
+| POST | `/api/clientes` | Registra un cliente nuevo |
+| GET | `/api/pedidos` | Lista de pedidos para el tablero del embudo |
+| POST | `/api/pedidos` | Crea el pedido (cliente por DNI, precio del producto, descuento opcional, baja de stock) |
+| PATCH | `/api/pedidos/:id/estado` | Avanza el estado del pedido en el embudo |
 
 ## Usuarios de prueba (seed)
 
