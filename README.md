@@ -11,10 +11,12 @@ El sistema es una **herramienta interna de gestión** (1–2 usuarios) que reemp
 | Autenticación (propietario / ayudante) | ✅ |
 | Inventario en tiempo real con alertas de stock mínimo | ✅ |
 | Reposición de stock (entrada de mercadería con registro) | ✅ |
-| Registro de productos nuevos (modelo, categoría, precio, tallas) | ✅ |
+| Catálogo de productos con detalle de tallas, filtros y alta (precio + tallas, sin categoría) | ✅ |
 | Directorio de clientes con detección por DNI | ✅ |
-| Registro de pedidos (precio del producto, descuento opcional fijo, baja de stock) | ✅ |
-| Embudo de ventas (contactado → reservado → despachado → entregado) | ✅ |
+| Agencias de transporte editables (catálogo + alta desde el pedido) | ✅ |
+| Registro de pedidos (precio del producto, descuento opcional fijo, agencia por pedido, baja de stock) | ✅ |
+| Embudo de ventas con fechas de registro/cambio de estado y filtros | ✅ |
+| Comprobante de agencia opcional al despachar | ✅ |
 | Hoja de envío en PDF | ⏳ pendiente |
 | Reporte semanal + alerta predictiva de reposición (ML) | ⏳ pendiente |
 
@@ -39,9 +41,10 @@ play-one/
 │  ├─ routes/
 │  │   ├─ auth.js       # POST /api/auth/login
 │  │   ├─ skus.js       # GET /api/skus, POST /api/skus/:id/reponer
-│  │   ├─ modelos.js    # GET/POST /api/modelos
+│  │   ├─ modelos.js    # GET/POST /api/modelos (con detalle de tallas)
 │  │   ├─ clientes.js   # GET/POST /api/clientes, GET /api/clientes/:dni
-│  │   └─ pedidos.js    # GET/POST /api/pedidos, PATCH /api/pedidos/:id/estado
+│  │   ├─ agencias.js   # GET/POST /api/agencias
+│  │   └─ pedidos.js    # GET/POST /api/pedidos, PATCH /:id/estado, PATCH /:id/comprobante
 │  └─ middleware/       # (pendiente)
 ├─ client/              # React + Vite
 │  ├─ index.html
@@ -50,7 +53,7 @@ play-one/
 │     ├─ App.jsx        # rutas protegidas
 │     ├─ api.js         # cliente fetch con token
 │     ├─ pages/         # Login, Dashboard, PedidoNuevo, Pedidos, EnvioPdf,
-│     │                 # Reportes, Clientes, ProductoNuevo
+│     │                 # Reportes, Clientes, Productos
 │     └─ components/    # Layout (menú), AlertaBadge
 ├─ ml/                  # alerta predictiva (pendiente)
 ├─ docs/                # informes y evidencias
@@ -112,14 +115,17 @@ curl http://localhost:3001/api/skus
 | POST | `/api/auth/login` | Devuelve un token JWT (8 h) |
 | GET | `/api/skus` | Los 90 SKU con precio del producto y `alerta` si está bajo el mínimo |
 | POST | `/api/skus/:id/reponer` | Añade stock y registra el movimiento de entrada |
-| GET | `/api/modelos` | Catálogo de productos con precio y stock total |
+| GET | `/api/modelos` | Catálogo de productos con precio, stock total y detalle de tallas |
 | POST | `/api/modelos` | Registra un producto nuevo con sus tallas y stock inicial |
 | GET | `/api/clientes` | Directorio de clientes con su cantidad de pedidos |
 | GET | `/api/clientes/:dni` | Busca un cliente por DNI (detecta clientes ya registrados) |
 | POST | `/api/clientes` | Registra un cliente nuevo |
-| GET | `/api/pedidos` | Lista de pedidos para el tablero del embudo |
-| POST | `/api/pedidos` | Crea el pedido (cliente por DNI, precio del producto, descuento opcional, baja de stock) |
+| GET | `/api/agencias` | Catálogo de agencias de transporte |
+| POST | `/api/agencias` | Agrega una agencia de transporte |
+| GET | `/api/pedidos` | Pedidos con agencia, comprobante, fecha de registro e historial de estados |
+| POST | `/api/pedidos` | Crea el pedido (cliente por DNI, agencia del pedido, precio del producto, descuento opcional, baja de stock) |
 | PATCH | `/api/pedidos/:id/estado` | Avanza el estado del pedido en el embudo |
+| PATCH | `/api/pedidos/:id/comprobante` | Guarda el comprobante de la agencia (solo despachado/entregado, opcional) |
 
 ## Usuarios de prueba (seed)
 
