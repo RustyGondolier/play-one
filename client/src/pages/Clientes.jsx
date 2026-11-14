@@ -5,6 +5,7 @@ const VACIO = { nombre: '', dni: '', celular: '', distrito_destino: '', agencia:
 
 export default function Clientes() {
   const [clientes, setClientes] = useState([]);
+  const [agencias, setAgencias] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
   const [exito, setExito] = useState('');
@@ -20,7 +21,13 @@ export default function Clientes() {
       .finally(() => setCargando(false));
   }
 
-  useEffect(cargar, []);
+  useEffect(() => {
+    cargar();
+    api
+      .get('/agencias')
+      .then(setAgencias)
+      .catch(() => {});
+  }, []);
 
   const filtrados = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
@@ -124,9 +131,9 @@ export default function Clientes() {
               <label>
                 Agencia de transporte *
                 <select value={form.agencia} onChange={(e) => cambiar('agencia', e.target.value)}>
-                  <option>Olva Courier</option>
-                  <option>Shalom</option>
-                  <option>Epack</option>
+                  {agencias.map((a) => (
+                    <option key={a.id}>{a.nombre}</option>
+                  ))}
                 </select>
               </label>
             </div>

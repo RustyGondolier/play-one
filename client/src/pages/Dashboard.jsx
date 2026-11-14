@@ -24,7 +24,7 @@ export default function Dashboard() {
     const q = busqueda.trim().toLowerCase();
     if (!q) return skus;
     return skus.filter(
-      (s) => s.modelo.toLowerCase().includes(q) || s.talla.includes(q) || s.categoria.includes(q)
+      (s) => s.modelo.toLowerCase().includes(q) || s.talla.includes(q)
     );
   }, [skus, busqueda]);
 
@@ -64,11 +64,11 @@ export default function Dashboard() {
           <input
             className="buscador"
             type="search"
-            placeholder="Buscar modelo, talla o categoría…"
+            placeholder="Buscar modelo o talla…"
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
           />
-          <Link className="btn btn-primario" to="/productos/nuevo">
+          <Link className="btn btn-primario" to="/productos">
             ＋ Nuevo producto
           </Link>
         </div>
@@ -100,7 +100,6 @@ export default function Dashboard() {
             <thead>
               <tr>
                 <th>Modelo</th>
-                <th>Categoría</th>
                 <th>Talla</th>
                 <th>Precio</th>
                 <th>Stock actual</th>
@@ -113,7 +112,6 @@ export default function Dashboard() {
               {filtrados.map((s) => (
                 <tr key={s.id} className={s.alerta ? 'fila-alerta' : ''}>
                   <td>{s.modelo}</td>
-                  <td>{s.categoria}</td>
                   <td>{s.talla}</td>
                   <td>S/ {Number(s.precio_base).toFixed(2)}</td>
                   <td className="celda-stock">{s.stock_actual}</td>
@@ -128,7 +126,7 @@ export default function Dashboard() {
               ))}
               {filtrados.length === 0 && (
                 <tr>
-                  <td colSpan="8" className="vacio">Sin resultados para «{busqueda}»</td>
+                  <td colSpan="7" className="vacio">Sin resultados para «{busqueda}»</td>
                 </tr>
               )}
             </tbody>

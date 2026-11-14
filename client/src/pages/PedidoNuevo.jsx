@@ -10,9 +10,13 @@ const VACIO_CLIENTE = {
   agencia: 'Olva Courier',
 };
 
+const NUEVA_AGENCIA = '__nueva__';
+
 export default function PedidoNuevo() {
   const [modelos, setModelos] = useState([]);
   const [skus, setSkus] = useState([]);
+  const [agencias, setAgencias] = useState([]);
+  const [nuevaAgencia, setNuevaAgencia] = useState('');
   const [error, setError] = useState('');
   const [exito, setExito] = useState('');
   const [enviando, setEnviando] = useState(false);
@@ -24,13 +28,29 @@ export default function PedidoNuevo() {
   const [descuento, setDescuento] = useState('');
 
   useEffect(() => {
-    Promise.all([api.get('/modelos'), api.get('/skus')])
-      .then(([m, s]) => {
+    Promise.all([api.get('/modelos'), api.get('/skus'), api.get('/agencias')])
+      .then(([m, s, a]) => {
         setModelos(m);
         setSkus(s);
+        setAgencias(a);
+        // mantiene la agencia por defecto si existe en el catálogo
+        setCliente((c) => ({
+          ...c,
+          agencia: a.some((x) => x.nombre === c.agencia) ? c.agencia : a[0]?.nombre || c.agencia,
+        }));
       })
       .catch((err) => setError(err.message));
   }, []);
+
+  // Opciones del select de agencia: las del catálogo + la del cliente
+  // por si no está en el catálogo (nunca se bloquea el campo)
+  const opcionesAgencia = useMemo(() => {
+    const nombres = agencias.map((a) => a.nombre);
+    if (cliente.agencia && cliente.agencia !== NUEVA_AGENCIA && !nombres.includes(cliente.agencia)) {
+      return [...agencias, { id: 'temp', nombre: cliente.agencia }];
+    }
+    return agencias;
+  }, [agencias, cliente.agencia]);
 
   // Tallas disponibles del modelo elegido (ordenadas de menor a mayor)
   const tallasDelModelo = useMemo(
@@ -86,18 +106,37 @@ export default function PedidoNuevo() {
     if (clienteExistente === false && (!cliente.nombre || !cliente.celular)) {
       return setError('Cliente nuevo: completa nombre, celular, destino y agencia');
     }
+    if (cliente.agencia === NUEVA_AGENCIA && !nuevaAgencia.trim()) {
+      return setError('Escribe el nombre de la nueva agencia');
+    }
 
     setEnviando(true);
     try {
+      // Resolver la agencia: si es nueva, se agrega al catálogo
+      let agenciaFinal = cliente.agencia;
+      if (agenciaFinal === NUEVA_AGENCIA) {
+        const nombre = nuevaAgencia.trim();
+        const yaExiste = agencias.find((a) => a.nombre.toLowerCase() === nombre.toLowerCase());
+        if (yaExiste) {
+          agenciaFinal = yaExiste.nombre;
+        } else {
+          const nueva = await api.post('/agencias', { nombre });
+          setAgencias((lista) => [...lista, nueva.agencia]);
+          agenciaFinal = nueva.agencia.nombre;
+        }
+      }
+
       const r = await api.post('/pedidos', {
         ...cliente,
+        agencia: agenciaFinal,
         dni: cliente.dni.trim(),
         sku_id: Number(skuId),
         descuento: desc,
       });
       setExito(`Pedido #${r.pedido.id} registrado. Stock descontado.`);
-      setCliente(VACIO_CLIENTE);
+      setCliente((c) => ({ ...VACIO_CLIENTE, agencia: agenciaFinal }));
       setClienteExistente(null);
+      setNuevaAgencia('');
       setModeloId('');
       setSkuId('');
       setDescuento('');
@@ -185,17 +224,34 @@ export default function PedidoNuevo() {
               <select
                 value={cliente.agencia}
                 onChange={(e) => cambiarCliente('agencia', e.target.value)}
-                disabled={clienteExistente === true}
               >
-                <option>Olva Courier</option>
-                <option>Shalom</option>
-                <option>Epack</option>
+                {opcionesAgencia.map((a) => (
+                  <option key={a.id} value={a.nombre}>
+                    {a.nombre}
+                  </option>
+                ))}
+                <option value={NUEVA_AGENCIA}>＋ Agregar otra agencia…</option>
               </select>
             </label>
+            {cliente.agencia === NUEVA_AGENCIA && (
+              <label>
+                Nueva agencia *
+                <input
+                  type="text"
+                  placeholder="Ej. Olva Courier"
+                  value={nuevaAgencia}
+                  onChange={(e) => setNuevaAgencia(e.target.value)}
+                  required
+                />
+              </label>
+            )}
           </div>
           {avisoCliente && (
             <small className={`nota ${clienteExistente ? 'nota-exito' : ''}`}>{avisoCliente}</small>
           )}
+          <small className="nota">
+            La agencia es de este pedido: puedes cambiarla aunque el cliente ya esté registrado.
+          </small>
         </fieldset>
 
         <fieldset>
@@ -207,7 +263,7 @@ export default function PedidoNuevo() {
                 <option value="">— Selecciona —</option>
                 {modelos.map((m) => (
                   <option key={m.id} value={m.id}>
-                    {m.nombre} ({m.categoria})
+                    {m.nombre}
                   </option>
                 ))}
               </select>

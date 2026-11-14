@@ -8,7 +8,7 @@ import Pedidos from './pages/Pedidos.jsx';
 import EnvioPdf from './pages/EnvioPdf.jsx';
 import Reportes from './pages/Reportes.jsx';
 import Clientes from './pages/Clientes.jsx';
-import ProductoNuevo from './pages/ProductoNuevo.jsx';
+import Productos from './pages/Productos.jsx';
 
 // Ruta protegida: sin sesión no hay acceso
 function Protected({ children }) {
@@ -26,7 +26,8 @@ export default function App() {
       <Route path="/pedidos" element={<Protected><Pedidos /></Protected>} />
       <Route path="/envios/:id" element={<Protected><EnvioPdf /></Protected>} />
       <Route path="/clientes" element={<Protected><Clientes /></Protected>} />
-      <Route path="/productos/nuevo" element={<Protected><ProductoNuevo /></Protected>} />
+      <Route path="/productos" element={<Protected><Productos /></Protected>} />
+      <Route path="/productos/nuevo" element={<Navigate to="/productos" replace />} />
       <Route path="/reportes" element={<Protected><Reportes /></Protected>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

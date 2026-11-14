@@ -6,7 +6,7 @@ const MENU = [
   { to: '/pedidos/nuevo', label: 'Nuevo pedido', icon: '➕' },
   { to: '/pedidos', label: 'Pedidos', icon: '🗂️' },
   { to: '/clientes', label: 'Clientes', icon: '👥' },
-  { to: '/productos/nuevo', label: 'Nuevo producto', icon: '👟' },
+  { to: '/productos', label: 'Productos', icon: '👟' },
   { to: '/reportes', label: 'Reportes', icon: '📈' },
 ];
 
