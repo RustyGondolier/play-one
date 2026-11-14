@@ -3,30 +3,38 @@ import pool from '../db/pool.js';
 
 const router = Router();
 
-// GET /api/modelos — catálogo con precio, stock total y detalle de tallas
+// GET /api/modelos — catálogo con código, precio, stock y el
+// detalle de TODAS las tallas del catálogo (con equivalentes
+// USA/cm, stock y si están marcadas como disponibles)
 router.get('/', async (req, res) => {
   try {
     const { rows } = await pool.query(`
       SELECT m.id,
+             m.codigo,
              m.nombre,
              m.precio_base,
              m.activo,
-             COALESCE(SUM(s.stock_actual), 0)::int AS stock_total,
-             COUNT(s.id)::int AS skus,
+             COALESCE(SUM(s.stock_actual) FILTER (WHERE s.disponible), 0)::int AS stock_total,
+             COUNT(s.id) FILTER (WHERE s.disponible)::int AS tallas_disponibles,
+             COUNT(s.id)::int AS tallas,
              COALESCE(
                json_agg(
                  json_build_object(
-                   'id',           s.id,
-                   'talla',        s.talla,
+                   'sku_id',       s.id,
+                   'peg',          CASE WHEN t.peg = trunc(t.peg) THEN trunc(t.peg)::text ELSE t.peg::text END,
+                   'usa',          CASE WHEN t.usa  = trunc(t.usa)  THEN trunc(t.usa)::text  ELSE t.usa::text  END,
+                   'cm',           CASE WHEN t.cm   = trunc(t.cm)   THEN trunc(t.cm)::text   ELSE t.cm::text   END,
                    'stock_actual', s.stock_actual,
                    'stock_minimo', s.stock_minimo,
-                   'alerta',       s.stock_actual < s.stock_minimo
-                 ) ORDER BY s.talla::numeric
+                   'disponible',   s.disponible,
+                   'alerta',       s.disponible AND s.stock_actual < s.stock_minimo
+                 ) ORDER BY t.orden
                ) FILTER (WHERE s.id IS NOT NULL),
                '[]'
-             ) AS tallas
+             ) AS tallas_detalle
         FROM modelos m
         LEFT JOIN skus s ON s.modelo_id = m.id
+        LEFT JOIN tallas t ON t.id = s.talla_id
        WHERE m.activo = TRUE
        GROUP BY m.id
        ORDER BY m.nombre
@@ -38,66 +46,58 @@ router.get('/', async (req, res) => {
   }
 });
 
-// POST /api/modelos — registra un producto nuevo con sus tallas y stock inicial
-// body: { nombre, precio_base, tallas: [37,38,...], stock_inicial, stock_minimo }
+// POST /api/modelos — registra un producto nuevo
+// body: { codigo, nombre, precio_base }
+// Crea el producto con TODAS las tallas del catálogo desmarcadas
+// (en 0 y sin alerta); después se marcan las tallas disponibles.
 router.post('/', async (req, res) => {
-  const { nombre, precio_base, tallas, stock_inicial, stock_minimo } = req.body || {};
+  const { codigo, nombre, precio_base } = req.body || {};
 
-  if (!nombre) {
+  if (!codigo || !String(codigo).trim()) {
+    return res.status(400).json({ error: 'El código del producto es obligatorio' });
+  }
+  if (!nombre || !String(nombre).trim()) {
     return res.status(400).json({ error: 'El nombre del producto es obligatorio' });
   }
   const precio = Number(precio_base);
   if (!Number.isFinite(precio) || precio <= 0) {
     return res.status(400).json({ error: 'El precio debe ser un número mayor a 0' });
   }
-  const listaTallas = Array.isArray(tallas) ? tallas.map((t) => String(t).trim()).filter(Boolean) : [];
-  if (!listaTallas.length) {
-    return res.status(400).json({ error: 'Indica al menos una talla' });
-  }
-  const inicial = Number(stock_inicial ?? 0);
-  const minimo = Number(stock_minimo ?? 5);
-  if (!Number.isInteger(inicial) || inicial < 0 || !Number.isInteger(minimo) || minimo < 0) {
-    return res.status(400).json({ error: 'Stock inicial y mínimo deben ser enteros >= 0' });
-  }
 
   const cliente = await pool.connect();
   try {
     await cliente.query('BEGIN');
 
-    const existente = await cliente.query('SELECT id FROM modelos WHERE nombre = $1', [nombre.trim()]);
+    const existente = await cliente.query(
+      'SELECT id FROM modelos WHERE codigo = $1 OR nombre = $2',
+      [String(codigo).trim(), String(nombre).trim()]
+    );
     if (existente.rows.length) {
       await cliente.query('ROLLBACK');
-      return res.status(409).json({ error: 'Ya existe un producto con ese nombre' });
+      return res.status(409).json({ error: 'Ya existe un producto con ese código o nombre' });
     }
 
     const { rows } = await cliente.query(
-      `INSERT INTO modelos (nombre, precio_base)
-       VALUES ($1, $2) RETURNING id`,
-      [nombre.trim(), precio]
+      `INSERT INTO modelos (codigo, nombre, precio_base)
+       VALUES ($1, $2, $3) RETURNING id`,
+      [String(codigo).trim(), String(nombre).trim(), precio]
     );
     const modeloId = rows[0].id;
 
-    for (const talla of listaTallas) {
-      const sku = await cliente.query(
-        `INSERT INTO skus (modelo_id, talla, stock_actual, stock_minimo)
-         VALUES ($1, $2, $3, $4) RETURNING id`,
-        [modeloId, talla, inicial, minimo]
-      );
-      if (inicial > 0) {
-        await cliente.query(
-          `INSERT INTO movimientos_stock (sku_id, tipo, cantidad, motivo)
-           VALUES ($1, 'entrada', $2, 'Alta de producto')`,
-          [sku.rows[0].id, inicial]
-        );
-      }
-    }
+    // Todas las tallas del catálogo, desmarcadas y en 0
+    const skus = await cliente.query(
+      `INSERT INTO skus (modelo_id, talla_id, stock_actual, stock_minimo, disponible)
+       SELECT $1, t.id, 0, 1, FALSE FROM tallas t
+       RETURNING id`,
+      [modeloId]
+    );
 
     await cliente.query('COMMIT');
-    res.status(201).json({ ok: true, id: modeloId, skus: listaTallas.length });
+    res.status(201).json({ ok: true, id: modeloId, skus: skus.rows.length });
   } catch (err) {
     await cliente.query('ROLLBACK');
     if (err.code === '23505') {
-      return res.status(409).json({ error: 'Ya existe un producto con ese nombre' });
+      return res.status(409).json({ error: 'Ya existe un producto con ese código o nombre' });
     }
     console.error('[modelos/post]', err.message);
     res.status(500).json({ error: 'Error al registrar el producto' });

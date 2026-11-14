@@ -1,6 +1,8 @@
 -- ============================================================
--- Play One — Datos de prueba (zapatillas de fútbol)
--- Ejecutar DESPUÉS de schema.sql
+-- Play One — Datos iniciales (zapatillas de fútbol Adidas)
+-- Productos, códigos y tallas tomados de la plantilla
+-- "PLANTILLAS PLAYONE.xlsx" (hojas STOCK COMPARTIDO y
+-- STOCK EN ESTUDIO). Ejecutar DESPUÉS de schema.sql
 -- ============================================================
 
 -- ------------------------------------------------------------
@@ -16,28 +18,27 @@ INSERT INTO usuarios (nombre, email, password_hash, rol) VALUES
    'ayudante');
 
 -- ------------------------------------------------------------
--- 2. Catálogo: 15 modelos de zapatillas de fútbol
---    (el precio/costo se guarda con el producto; sin categoría)
+-- 2. Tallas registradas con sus equivalentes
+--    PEG/USA/cm exactos según "STOCK EN ESTUDIO"; las tallas
+--    35.5 a 38.5 (aparecen en el stock) se extrapolan de esa
+--    misma tabla de conversión
 -- ------------------------------------------------------------
-INSERT INTO modelos (nombre, precio_base) VALUES
-  ('Thunder Strike FG',   149.90),
-  ('Lightning Pro FG',    159.90),
-  ('Falcon Grip FG',      139.90),
-  ('Elite Carbon FG',     189.90),
-  ('Titan Power FG',      169.90),
-  ('Viper Cut AG',        129.90),
-  ('Razor Speed AG',      139.90),
-  ('Eagle Control AG',    125.90),
-  ('Storm Play AG',       119.90),
-  ('Nitro Turf Sala',     109.90),
-  ('Arena Court Indoor',  99.90),
-  ('Futsal Pro Court',    95.90),
-  ('Street Futsal Low',   89.90),
-  ('Junior Speed AG',     85.90),
-  ('Kids Kick FG',        79.90);
+INSERT INTO tallas (peg, usa, cm, orden) VALUES
+  (35.5, 3.5,  21.0, 35.5),   -- extrapolado
+  (36.5, 4.0,  21.5, 36.5),   -- extrapolado
+  (38.0, 5.5,  23.0, 38.0),   -- extrapolado
+  (38.5, 5.5,  23.0, 38.5),   -- extrapolado
+  (39.5, 6.5,  24.0, 39.5),   -- STOCK EN ESTUDIO
+  (40.0, 7.0,  24.5, 40.0),
+  (40.5, 7.5,  25.0, 40.5),
+  (41.5, 8.0,  25.5, 41.5),
+  (42.0, 8.5,  26.0, 42.0),
+  (42.5, 9.0,  26.5, 42.5),
+  (43.5, 9.5,  27.0, 43.5),
+  (44.0, 10.0, 27.5, 44.0);
 
 -- ------------------------------------------------------------
--- 2b. Agencias de transporte (catálogo editable desde la web)
+-- 3. Agencias de transporte (catálogo editable desde la web)
 -- ------------------------------------------------------------
 INSERT INTO agencias (nombre) VALUES
   ('Olva Courier'),
@@ -46,26 +47,85 @@ INSERT INTO agencias (nombre) VALUES
   ('InDrive');
 
 -- ------------------------------------------------------------
--- 3. Stock: 90 SKU (15 modelos × 6 tallas, 37-42)
---    Algunos quedan por debajo del mínimo (5) para ver las alertas
+-- 4. Catálogo real: 23 productos Adidas de la plantilla
+--    (código + nombre tal como están en el Excel.
+--     Precios de referencia de la hoja ABRIL: MESSI 320,
+--     PRED 275, resto 250)
 -- ------------------------------------------------------------
-INSERT INTO skus (modelo_id, talla, stock_actual, stock_minimo)
-SELECT m.id,
-       (36 + t.n)::text,
-       ((m.id * 17 + t.n * 11) % 40),   -- 0 a 39 unidades
-       5
-  FROM modelos m
-  CROSS JOIN (SELECT generate_series(1, 6) AS n) t;
+INSERT INTO modelos (codigo, nombre, precio_base) VALUES
+  ('KJ3418', 'CHIMP F50 VERDE LEAGUE SP',  250.00),
+  ('KK1376', 'F50 MESSI ROJO CLUB',         320.00),
+  ('IH7213', 'PRED BLANCO LEAGUE CL',       275.00),
+  ('NO VENTA', 'HYP ROSADO CLUB Y LEAGUE',  250.00),
+  ('IH4585', 'HYP BLANCO LEAGUE SP',        250.00),
+  ('KJ3436', 'HYP NEGRO LEAGUE',            250.00),
+  ('KJ6711', 'HYP ROSA LEAGUE SP',          250.00),
+  ('IH2104', 'PRED NEGRO VERDE LEAG CL',    275.00),
+  ('KK1367', 'HYP VERDE CLUB',              250.00),
+  ('JR5029', 'PRED NEGRO ROJO LEAGUE',      275.00),
+  ('ID3883', 'PRED ESSENTIALS',             275.00),
+  ('JR6926', 'F50 SPARKF BLAN LEAGUE',      250.00),
+  ('JR7912', 'PRED ROJO LEAGUE SL',         275.00),
+  ('KK3809', 'F50 SPARKF VERDE CLUB',       250.00),
+  ('JR9051', 'F50 VERDE NEON CLUB',         250.00),
+  ('KJ3779', 'F50 YAMAL LEAGUE',            250.00),
+  ('JR7917', 'PRED ROJO LEAGUE CL',         275.00),
+  ('KI5869', 'PRED KAKA LEAGUE',            275.00),
+  ('JR7880', 'CHIMP PRED ROJO LEAG SL',     275.00),
+  ('JR8979', 'F50 VERDE NEON LEAG SP',      250.00),
+  ('IH7212', 'PRED ROSA LEAGUE CL',         275.00),
+  ('KK3808', 'F50 SPARKF ROSA CLUB',        250.00),
+  ('JP6273', 'CHIMP PRED NEGR VERD L',      275.00);
 
 -- ------------------------------------------------------------
--- 4. Movimiento inicial de inventario (explica el stock actual)
+-- 5. SKU: cada producto nace con TODAS las tallas del catálogo,
+--    desmarcadas (no disponibles) y en 0. Después se marcan las
+--    tallas que el negocio maneja, con su stock real del Excel.
+-- ------------------------------------------------------------
+INSERT INTO skus (modelo_id, talla_id, stock_actual, stock_minimo, disponible)
+SELECT m.id, t.id, 0, 1, FALSE
+  FROM modelos m
+  CROSS JOIN tallas t;
+
+-- Tallas con existencia real en la plantilla (columna PLAY ONE):
+-- marcadas como disponibles con su stock. "vendido" queda en 0
+-- (sigue disponible: se puede conseguir de nuevo).
+WITH datos (codigo, peg, stock) AS (
+  VALUES
+    ('KJ3418',   40.0, 1),   ('KK1376',   42.5, 1),
+    ('IH7213',   41.5, 1),   ('NO VENTA', 41.5, 1),
+    ('IH4585',   41.5, 1),   ('KJ3436',   41.5, 1),
+    ('KJ6711',   40.5, 0),   -- vendido
+    ('IH2104',   38.5, 1),   ('KK1367',   38.0, 1),
+    ('JR5029',   42.0, 1),   ('ID3883',   41.5, 1),
+    ('JR6926',   36.5, 1),   ('JR7912',   36.5, 1),
+    ('KK3809',   40.5, 1),   ('JR9051',   42.0, 1),
+    ('KJ3779',   35.5, 1),   ('JR7917',   38.5, 1),
+    ('KI5869',   41.5, 1),   ('JR7880',   42.0, 1),
+    ('JR8979',   42.0, 1),   ('IH7212',   41.5, 1),
+    ('KK3808',   40.0, 1),   ('JP6273',   41.5, 1),
+    -- STOCK EN ESTUDIO: F50 MESSI (KK1376) por talla
+    ('KK1376',   40.5, 3),   ('KK1376',   41.5, 5),
+    ('KK1376',   42.0, 2)
+)
+UPDATE skus s
+   SET disponible = TRUE, stock_actual = d.stock
+  FROM datos d
+  JOIN modelos m ON m.codigo = d.codigo
+  JOIN tallas  t ON t.peg   = d.peg
+ WHERE s.modelo_id = m.id
+   AND s.talla_id  = t.id;
+
+-- ------------------------------------------------------------
+-- 6. Movimiento inicial de inventario (explica el stock actual)
 -- ------------------------------------------------------------
 INSERT INTO movimientos_stock (sku_id, tipo, cantidad, motivo)
-SELECT s.id, 'entrada', s.stock_actual + 10, 'Carga inicial de inventario'
-  FROM skus s;
+SELECT s.id, 'entrada', s.stock_actual, 'Inventario inicial (plantilla Excel)'
+  FROM skus s
+ WHERE s.disponible AND s.stock_actual > 0;
 
 -- ------------------------------------------------------------
--- 5. Clientes
+-- 7. Clientes (datos de prueba)
 -- ------------------------------------------------------------
 INSERT INTO clientes (nombre, dni, celular, distrito_destino, agencia) VALUES
   ('María Quispe',      '45678912', '987654321', 'Arequipa',    'Olva Courier'),
@@ -78,13 +138,17 @@ INSERT INTO clientes (nombre, dni, celular, distrito_destino, agencia) VALUES
   ('Diego Castillo',    '44567890', '932109875', 'Arequipa',    'Olva Courier');
 
 -- ------------------------------------------------------------
--- 6. 60 pedidos de prueba con su estado del embudo
+-- 8. 60 pedidos de prueba sobre las tallas disponibles
 --    (descuento opcional: monto fijo en soles, 0 si no aplica;
 --     agencia del pedido = agencia del cliente)
 -- ------------------------------------------------------------
+WITH activos AS (
+  SELECT row_number() OVER (ORDER BY id) - 1 AS rn, id FROM skus WHERE disponible
+),
+total AS (SELECT count(*) AS n FROM activos)
 INSERT INTO pedidos (cliente_id, sku_id, precio, descuento, agencia, estado, creado_en)
 SELECT 1 + (g % 8) AS cliente_id,
-       s.id        AS sku_id,
+       a.id        AS sku_id,
        m.precio_base AS precio,
        CASE WHEN g % 3 = 0 THEN ((g % 4) + 1) * 5.00 ELSE 0 END AS descuento,
        c.agencia,
@@ -96,7 +160,9 @@ SELECT 1 + (g % 8) AS cliente_id,
          - ((g % 30) || ' days')::interval
          - ((g % 24) || ' hours')::interval AS creado_en
   FROM generate_series(1, 60) AS g
-  JOIN skus s     ON s.id = 1 + ((g * 7) % 90)
+  JOIN total ON TRUE
+  JOIN activos a ON a.rn = g % total.n
+  JOIN skus s     ON s.id = a.id
   JOIN modelos m  ON m.id = s.modelo_id
   JOIN clientes c ON c.id = 1 + (g % 8)
  ORDER BY g;
@@ -109,7 +175,7 @@ UPDATE pedidos
  WHERE estado IN ('despachado', 'entregado');
 
 -- ------------------------------------------------------------
--- 7. Historial de estados (auditoría del embudo)
+-- 9. Historial de estados (auditoría del embudo)
 -- ------------------------------------------------------------
 INSERT INTO estados_pedido (pedido_id, estado, fecha, usuario_id)
 SELECT p.id, 'contactado', p.creado_en, 1 FROM pedidos p;
@@ -127,23 +193,24 @@ SELECT p.id, 'entregado', p.creado_en + interval '4 days', 1
   FROM pedidos p WHERE p.estado = 'entregado';
 
 -- ------------------------------------------------------------
--- 8. Envíos (para pedidos despachados y entregados)
+-- 10. Envíos (para pedidos despachados y entregados)
 -- ------------------------------------------------------------
 INSERT INTO envios (pedido_id, codigo, agencia, generado_en)
 SELECT p.id,
        'ENV-' || lpad(p.id::text, 5, '0'),
-       c.agencia,
+       p.agencia,
        p.creado_en + interval '1 day'
   FROM pedidos p
-  JOIN clientes c ON c.id = p.cliente_id
  WHERE p.estado IN ('despachado', 'entregado');
 
 -- Resumen
 SELECT (SELECT count(*) FROM usuarios)   AS usuarios,
+       (SELECT count(*) FROM tallas)     AS tallas,
        (SELECT count(*) FROM agencias)   AS agencias,
        (SELECT count(*) FROM modelos)    AS modelos,
        (SELECT count(*) FROM skus)       AS skus,
-       (SELECT count(*) FROM skus WHERE stock_actual < stock_minimo) AS skus_en_alerta,
+       (SELECT count(*) FROM skus WHERE disponible) AS disponibles,
+       (SELECT count(*) FROM skus WHERE disponible AND stock_actual < stock_minimo) AS en_alerta,
        (SELECT count(*) FROM clientes)   AS clientes,
        (SELECT count(*) FROM pedidos)    AS pedidos,
        (SELECT count(*) FROM pedidos WHERE descuento > 0) AS con_descuento,

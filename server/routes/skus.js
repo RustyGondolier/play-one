@@ -4,27 +4,57 @@ import pool from '../db/pool.js';
 const router = Router();
 
 // GET /api/skus
-// Lista los SKU (modelo × talla) con stock, mínimo, precio del producto
-// y la bandera "alerta" (stock por debajo del mínimo).
+// SKU disponibles a la venta (disponible = TRUE) con su talla PEG
+// y equivalentes USA/cm, precio del producto y la bandera "alerta"
+// (solo aplica a tallas marcadas como disponibles).
 router.get('/', async (req, res) => {
   try {
     const { rows } = await pool.query(`
       SELECT s.id,
              s.modelo_id,
+             m.codigo,
              m.nombre AS modelo,
              m.precio_base,
-             s.talla,
+             CASE WHEN t.peg = trunc(t.peg) THEN trunc(t.peg)::text ELSE t.peg::text END AS talla,
+             CASE WHEN t.usa  = trunc(t.usa)  THEN trunc(t.usa)::text  ELSE t.usa::text  END AS usa,
+             CASE WHEN t.cm   = trunc(t.cm)   THEN trunc(t.cm)::text   ELSE t.cm::text   END AS cm,
              s.stock_actual,
              s.stock_minimo,
              (s.stock_actual < s.stock_minimo) AS alerta
         FROM skus s
         JOIN modelos m ON m.id = s.modelo_id
-       ORDER BY alerta DESC, m.nombre, s.talla
+        JOIN tallas  t ON t.id = s.talla_id
+       WHERE s.disponible = TRUE
+       ORDER BY alerta DESC, m.nombre, t.orden
     `);
     res.json(rows);
   } catch (err) {
     console.error('[skus]', err.message);
     res.status(500).json({ error: 'Error al consultar el stock' });
+  }
+});
+
+// PATCH /api/skus/:id  { disponible }
+// Marca/desmarca la casilla de disponibilidad de la talla.
+// Desmarcada: no se puede vender y no genera alerta.
+router.patch('/:id', async (req, res) => {
+  const { id } = req.params;
+  if (typeof req.body?.disponible !== 'boolean') {
+    return res.status(400).json({ error: 'El campo disponible debe ser true o false' });
+  }
+
+  try {
+    const { rows } = await pool.query(
+      `UPDATE skus SET disponible = $1
+        WHERE id = $2
+        RETURNING id, disponible`,
+      [req.body.disponible, id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'SKU no encontrado' });
+    res.json({ ok: true, disponible: rows[0].disponible });
+  } catch (err) {
+    console.error('[skus/patch]', err.message);
+    res.status(500).json({ error: 'Error al actualizar la talla' });
   }
 });
 

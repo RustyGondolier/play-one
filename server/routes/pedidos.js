@@ -14,7 +14,12 @@ router.get('/', async (req, res) => {
       SELECT p.id,
              c.nombre AS cliente,
              c.dni,
-             (m.nombre || ' · ' || s.talla) AS producto,
+             m.codigo,
+             (m.nombre || ' · ' ||
+               CASE WHEN t.peg = trunc(t.peg) THEN trunc(t.peg)::text ELSE t.peg::text END
+             ) AS producto,
+             CASE WHEN t.peg = trunc(t.peg) THEN trunc(t.peg)::text ELSE t.peg::text END AS talla,
+             CASE WHEN t.usa  = trunc(t.usa)  THEN trunc(t.usa)::text  ELSE t.usa::text  END AS usa,
              to_char(p.creado_en, 'DD/MM') AS fecha,
              to_char(p.creado_en, 'YYYY-MM-DD') AS fecha_iso,
              to_char(p.creado_en, 'DD/MM/YYYY HH24:MI') AS fecha_registro,
@@ -40,6 +45,7 @@ router.get('/', async (req, res) => {
         FROM pedidos p
         JOIN clientes c ON c.id = p.cliente_id
         JOIN skus s     ON s.id = p.sku_id
+        JOIN tallas t   ON t.id = s.talla_id
         JOIN modelos m  ON m.id = s.modelo_id
        ORDER BY p.creado_en DESC
     `);
@@ -97,10 +103,14 @@ router.post('/', async (req, res) => {
       clienteId = nuevo.rows[0].id;
     }
 
-    // 2. Producto: precio del producto y stock disponible
+    // 2. Producto: precio, talla y stock disponible
     const sku = await cliente.query(
-      `SELECT s.id, s.stock_actual, m.precio_base, m.nombre
-         FROM skus s JOIN modelos m ON m.id = s.modelo_id
+      `SELECT s.id, s.stock_actual, s.disponible,
+              CASE WHEN t.peg = trunc(t.peg) THEN trunc(t.peg)::text ELSE t.peg::text END AS peg,
+              m.precio_base, m.nombre, m.codigo
+         FROM skus s
+         JOIN modelos m ON m.id = s.modelo_id
+         JOIN tallas  t ON t.id = s.talla_id
         WHERE s.id = $1`,
       [sku_id]
     );
@@ -108,11 +118,15 @@ router.post('/', async (req, res) => {
       await cliente.query('ROLLBACK');
       return res.status(404).json({ error: 'Producto no encontrado' });
     }
-    const { stock_actual, precio_base, nombre: modelo } = sku.rows[0];
+    const { stock_actual, disponible, precio_base, peg, nombre: modelo, codigo } = sku.rows[0];
 
+    if (!disponible) {
+      await cliente.query('ROLLBACK');
+      return res.status(409).json({ error: `La talla ${peg} de ${modelo} no está disponible` });
+    }
     if (stock_actual < 1) {
       await cliente.query('ROLLBACK');
-      return res.status(409).json({ error: `Sin stock disponible de ${modelo}` });
+      return res.status(409).json({ error: `Sin stock disponible de ${modelo} · ${peg}` });
     }
     if (desc > Number(precio_base)) {
       await cliente.query('ROLLBACK');

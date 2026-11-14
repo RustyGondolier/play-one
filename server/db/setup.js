@@ -30,10 +30,12 @@ try {
 
   const { rows } = await pool.query(`
     SELECT (SELECT count(*) FROM usuarios)   AS usuarios,
+           (SELECT count(*) FROM tallas)     AS tallas,
            (SELECT count(*) FROM agencias)   AS agencias,
            (SELECT count(*) FROM modelos)    AS modelos,
            (SELECT count(*) FROM skus)       AS skus,
-           (SELECT count(*) FROM skus WHERE stock_actual < stock_minimo) AS en_alerta,
+           (SELECT count(*) FROM skus WHERE disponible) AS disponibles,
+           (SELECT count(*) FROM skus WHERE disponible AND stock_actual < stock_minimo) AS en_alerta,
            (SELECT count(*) FROM clientes)   AS clientes,
            (SELECT count(*) FROM pedidos)    AS pedidos,
            (SELECT count(*) FROM pedidos WHERE descuento > 0) AS con_descuento,

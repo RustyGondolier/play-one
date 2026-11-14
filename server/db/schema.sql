@@ -11,6 +11,7 @@ DROP TABLE IF EXISTS movimientos_stock CASCADE;
 DROP TABLE IF EXISTS clientes CASCADE;
 DROP TABLE IF EXISTS skus CASCADE;
 DROP TABLE IF EXISTS modelos CASCADE;
+DROP TABLE IF EXISTS tallas CASCADE;
 DROP TABLE IF EXISTS agencias CASCADE;
 DROP TABLE IF EXISTS usuarios CASCADE;
 
@@ -31,23 +32,38 @@ CREATE TABLE agencias (
   nombre VARCHAR(60) NOT NULL UNIQUE
 );
 
--- Modelos de zapatillas de fútbol (única línea de negocio de Play One)
+-- Catálogo de tallas registradas con sus equivalentes
+-- (PEG = talla que usa el negocio; USA y cm según la tabla de
+--  conversión de la plantilla "STOCK EN ESTUDIO")
+CREATE TABLE tallas (
+  id    SERIAL PRIMARY KEY,
+  peg   NUMERIC(4,1) NOT NULL UNIQUE,   -- talla PEG/EUR (35.5, 36.5, 38...)
+  usa   NUMERIC(4,1),                   -- equivalente USA
+  cm    NUMERIC(4,1),                   -- equivalente en centímetros
+  orden NUMERIC(5,1) NOT NULL           -- para listar de menor a mayor
+);
+
+-- Modelos de zapatillas de fútbol (solo Adidas; única línea de negocio)
 -- El precio (costo) se guarda aquí, con el producto (precio_base)
 CREATE TABLE modelos (
   id          SERIAL PRIMARY KEY,
-  nombre      VARCHAR(100) NOT NULL UNIQUE,
+  codigo      VARCHAR(20) NOT NULL UNIQUE,  -- código del producto (p.ej. KJ3418)
+  nombre      VARCHAR(120) NOT NULL UNIQUE,
   precio_base NUMERIC(10,2) NOT NULL CHECK (precio_base > 0),
   activo      BOOLEAN NOT NULL DEFAULT TRUE
 );
 
--- Stock por modelo × talla (90 líneas: 15 modelos × 6 tallas)
+-- Stock por modelo × talla. "disponible" es la casilla por talla:
+-- marcada = se puede vender/conseguir; desmarcada = la talla aparece
+-- gris, no se puede vender y no genera alerta aunque esté en 0.
 CREATE TABLE skus (
   id            SERIAL PRIMARY KEY,
   modelo_id     INTEGER NOT NULL REFERENCES modelos(id),
-  talla         VARCHAR(5) NOT NULL,
+  talla_id      INTEGER NOT NULL REFERENCES tallas(id),
   stock_actual  INTEGER NOT NULL DEFAULT 0 CHECK (stock_actual >= 0),
-  stock_minimo  INTEGER NOT NULL DEFAULT 5, -- alerta de reposición
-  UNIQUE (modelo_id, talla)
+  stock_minimo  INTEGER NOT NULL DEFAULT 1, -- alerta de reposición
+  disponible     BOOLEAN NOT NULL DEFAULT FALSE,
+  UNIQUE (modelo_id, talla_id)
 );
 
 -- Movimientos de inventario (entrada / salida / ajuste)
