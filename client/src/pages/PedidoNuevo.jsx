@@ -263,7 +263,7 @@ export default function PedidoNuevo() {
                 <option value="">— Selecciona —</option>
                 {modelos.map((m) => (
                   <option key={m.id} value={m.id}>
-                    {m.nombre}
+                    {m.codigo} · {m.nombre}
                   </option>
                 ))}
               </select>
@@ -281,7 +281,7 @@ export default function PedidoNuevo() {
                 </option>
                 {tallasDelModelo.map((s) => (
                   <option key={s.id} value={s.id}>
-                    {s.talla} (stock {s.stock_actual})
+                    {s.talla} · USA {s.usa ?? '—'} (stock {s.stock_actual})
                   </option>
                 ))}
               </select>

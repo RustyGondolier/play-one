@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import api from '../api.js';
 
-const TALLAS = ['37', '38', '39', '40', '41', '42'];
-
 const FILTROS_STOCK = [
   { valor: '', etiqueta: 'Todo el stock' },
   { valor: 'bajo', etiqueta: 'Con stock bajo' },
@@ -22,16 +20,10 @@ export default function Productos() {
   // detalle de tallas abierto
   const [abierto, setAbierto] = useState(null); // id del producto
 
-  // formulario de alta
+  // formulario de alta: solo código, producto y precio
   const [mostrarForm, setMostrarForm] = useState(false);
   const [enviando, setEnviando] = useState(false);
-  const [form, setForm] = useState({
-    nombre: '',
-    precio_base: '',
-    stock_inicial: '10',
-    stock_minimo: '5',
-  });
-  const [tallas, setTallas] = useState([...TALLAS]);
+  const [form, setForm] = useState({ codigo: '', nombre: '', precio_base: '' });
 
   function cargar() {
     api
@@ -46,9 +38,16 @@ export default function Productos() {
   const filtrados = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
     return productos.filter((p) => {
-      if (q && !p.nombre.toLowerCase().includes(q)) return false;
-      const agotado = Number(p.stock_total) === 0;
-      const bajo = (p.tallas || []).some((t) => t.alerta);
+      if (
+        q &&
+        !p.nombre.toLowerCase().includes(q) &&
+        !String(p.codigo).toLowerCase().includes(q)
+      ) {
+        return false;
+      }
+      const sinTallas = Number(p.tallas_disponibles) === 0;
+      const agotado = !sinTallas && Number(p.stock_total) === 0;
+      const bajo = (p.tallas_detalle || []).some((t) => t.alerta);
       if (filtroStock === 'agotado' && !agotado) return false;
       if (filtroStock === 'bajo' && !(bajo && !agotado)) return false;
       return true;
@@ -56,37 +55,83 @@ export default function Productos() {
   }, [productos, busqueda, filtroStock]);
 
   function estadoProducto(p) {
+    if (Number(p.tallas_disponibles) === 0) return { texto: 'Sin tallas disponibles', clase: 'badge-gris' };
     if (Number(p.stock_total) === 0) return { texto: 'Agotado', clase: 'badge-rojo' };
-    if ((p.tallas || []).some((t) => t.alerta)) return { texto: 'Stock bajo', clase: 'badge-rojo' };
+    if ((p.tallas_detalle || []).some((t) => t.alerta)) return { texto: 'Stock bajo', clase: 'badge-rojo' };
     return { texto: 'Disponible', clase: 'badge-verde' };
+  }
+
+  function estadoTalla(t) {
+    if (!t.disponible) return { texto: 'No disponible', clase: 'badge-gris' };
+    if (Number(t.stock_actual) === 0) return { texto: 'Agotada', clase: 'badge-rojo' };
+    if (t.alerta) return { texto: 'Bajo mínimo', clase: 'badge-rojo' };
+    return { texto: 'OK', clase: 'badge-verde' };
   }
 
   function cambiar(campo, valor) {
     setForm((f) => ({ ...f, [campo]: valor }));
   }
 
-  function alternarTalla(t) {
-    setTallas((lista) => (lista.includes(t) ? lista.filter((x) => x !== t) : [...lista, t]));
+  // Marcar/desmarcar la casilla de disponibilidad de la talla
+  async function alternarDisponible(sku, checked) {
+    setError('');
+    setExito('');
+    try {
+      await api.patch(`/skus/${sku.sku_id}`, { disponible: checked });
+      setExito(
+        checked
+          ? `Talla ${sku.peg}: marcada como disponible.`
+          : `Talla ${sku.peg}: desmarcada (no se podrá vender ni generará alerta).`
+      );
+      cargar();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  // Reponer stock de una talla (disponible)
+  async function reponer(producto, sku) {
+    const respuesta = window.prompt(
+      `¿Cuántas unidades llegaron de ${producto.nombre} talla ${sku.peg}?`,
+      '1'
+    );
+    if (respuesta === null) return;
+    const cantidad = Number(respuesta);
+    if (!Number.isInteger(cantidad) || cantidad <= 0) {
+      setError('La cantidad debe ser un número entero mayor a 0');
+      return;
+    }
+    setError('');
+    setExito('');
+    try {
+      const r = await api.post(`/skus/${sku.sku_id}/reponer`, { cantidad });
+      setExito(`${producto.nombre} talla ${sku.peg}: nuevo stock ${r.stock_actual}.`);
+      cargar();
+    } catch (err) {
+      setError(err.message);
+    }
   }
 
   async function guardar(e) {
     e.preventDefault();
     setError('');
     setExito('');
-    if (!tallas.length) return setError('Selecciona al menos una talla');
     setEnviando(true);
     try {
       const r = await api.post('/modelos', {
         ...form,
+        codigo: form.codigo.trim(),
+        nombre: form.nombre.trim(),
         precio_base: Number(form.precio_base),
-        stock_inicial: Number(form.stock_inicial || 0),
-        stock_minimo: Number(form.stock_minimo || 5),
-        tallas,
       });
-      setExito(`Producto registrado con ${r.skus} tallas.`);
-      setForm({ nombre: '', precio_base: '', stock_inicial: '10', stock_minimo: '5' });
-      setTallas([...TALLAS]);
+      setExito(
+        `Producto ${form.codigo} registrado con ${r.skus} tallas desmarcadas: marca las que manejes.`
+      );
+      setForm({ codigo: '', nombre: '', precio_base: '' });
       setMostrarForm(false);
+      setBusqueda('');
+      setFiltroStock('');
+      setAbierto(r.id); // abrir el detalle para marcar tallas
       cargar();
     } catch (err) {
       setError(err.message);
@@ -100,13 +145,13 @@ export default function Productos() {
       <header className="pagina-titulo">
         <div>
           <h1>Productos</h1>
-          <p>Catálogo de zapatillas: costo, tallas y stock de cada una</p>
+          <p>Código, precio y disponibilidad de cada talla</p>
         </div>
         <div className="acciones-titulo">
           <input
             className="buscador"
             type="search"
-            placeholder="Buscar producto…"
+            placeholder="Buscar código o producto…"
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
           />
@@ -129,70 +174,43 @@ export default function Productos() {
       {mostrarForm && (
         <form className="formulario" onSubmit={guardar}>
           <fieldset>
-            <legend>Producto</legend>
+            <legend>Nuevo producto</legend>
             <div className="campo-grid">
               <label>
-                Nombre del producto *
+                Código *
                 <input
                   type="text"
-                  placeholder="Ej. Thunder Strike FG"
+                  placeholder="Ej. KJ3418"
+                  value={form.codigo}
+                  onChange={(e) => cambiar('codigo', e.target.value)}
+                  required
+                />
+              </label>
+              <label>
+                Producto *
+                <input
+                  type="text"
+                  placeholder="Ej. CHIMP F50 VERDE LEAGUE SP"
                   value={form.nombre}
                   onChange={(e) => cambiar('nombre', e.target.value)}
                   required
                 />
               </label>
               <label>
-                Costo / precio (S/) *
+                Precio (S/) *
                 <input
                   type="number"
                   step="0.01"
                   min="0.01"
-                  placeholder="149.90"
+                  placeholder="250.00"
                   value={form.precio_base}
                   onChange={(e) => cambiar('precio_base', e.target.value)}
                   required
                 />
               </label>
             </div>
-          </fieldset>
-
-          <fieldset>
-            <legend>Tallas y stock inicial</legend>
-            <div className="tallas-check">
-              {TALLAS.map((t) => (
-                <label key={t} className={`talla-opcion ${tallas.includes(t) ? 'activa' : ''}`}>
-                  <input
-                    type="checkbox"
-                    checked={tallas.includes(t)}
-                    onChange={() => alternarTalla(t)}
-                  />
-                  {t}
-                </label>
-              ))}
-            </div>
-            <div className="campo-grid">
-              <label>
-                Stock inicial por talla
-                <input
-                  type="number"
-                  min="0"
-                  value={form.stock_inicial}
-                  onChange={(e) => cambiar('stock_inicial', e.target.value)}
-                />
-              </label>
-              <label>
-                Stock mínimo (para alertas)
-                <input
-                  type="number"
-                  min="0"
-                  value={form.stock_minimo}
-                  onChange={(e) => cambiar('stock_minimo', e.target.value)}
-                />
-              </label>
-            </div>
             <small className="nota">
-              Se registrará {tallas.length} líneas de stock (una por talla) con su movimiento de
-              entrada.
+              Se registrará con todas las tallas desmarcadas: después marcas las que manejas.
             </small>
           </fieldset>
 
@@ -211,9 +229,10 @@ export default function Productos() {
           <table className="tabla">
             <thead>
               <tr>
+                <th>Código</th>
                 <th>Producto</th>
-                <th>Costo / precio</th>
-                <th>Tallas</th>
+                <th>Precio</th>
+                <th>Tallas disponibles</th>
                 <th>Stock total</th>
                 <th>Estado</th>
                 <th></th>
@@ -225,9 +244,12 @@ export default function Productos() {
                 const expandido = abierto === p.id;
                 return [
                   <tr key={p.id}>
+                    <td className="celda-codigo">{p.codigo}</td>
                     <td>{p.nombre}</td>
                     <td>S/ {Number(p.precio_base).toFixed(2)}</td>
-                    <td>{p.skus}</td>
+                    <td>
+                      {p.tallas_disponibles} / {p.tallas}
+                    </td>
                     <td className="celda-stock">{p.stock_total}</td>
                     <td>
                       <span className={`badge ${est.clase}`}>{est.texto}</span>
@@ -243,37 +265,69 @@ export default function Productos() {
                   </tr>,
                   expandido && (
                     <tr key={`${p.id}-det`} className="fila-detalle">
-                      <td colSpan="6">
+                      <td colSpan="7">
                         <table className="tabla-detalle">
                           <thead>
                             <tr>
-                              <th>Talla</th>
+                              <th className="col-check">✓</th>
+                              <th>Talla (PEG)</th>
+                              <th>USA</th>
+                              <th>cm</th>
                               <th>Stock actual</th>
                               <th>Stock mínimo</th>
                               <th>Estado</th>
+                              <th></th>
                             </tr>
                           </thead>
                           <tbody>
-                            {(p.tallas || []).map((t) => (
-                              <tr key={t.id} className={t.alerta ? 'fila-alerta' : ''}>
-                                <td>{t.talla}</td>
-                                <td className="celda-stock">{t.stock_actual}</td>
-                                <td>{t.stock_minimo}</td>
-                                <td>
-                                  <span
-                                    className={`badge ${t.stock_actual === 0 ? 'badge-rojo' : t.alerta ? 'badge-rojo' : 'badge-verde'}`}
-                                  >
-                                    {t.stock_actual === 0
-                                      ? 'Agotada'
-                                      : t.alerta
-                                        ? 'Bajo mínimo'
-                                        : 'OK'}
-                                  </span>
-                                </td>
-                              </tr>
-                            ))}
+                            {(p.tallas_detalle || []).map((t) => {
+                              const estT = estadoTalla(t);
+                              return (
+                                <tr key={t.sku_id} className={t.disponible ? '' : 'fila-inactiva'}>
+                                  <td className="col-check">
+                                    <input
+                                      type="checkbox"
+                                      className="chk-disponible"
+                                      checked={t.disponible}
+                                      onChange={(e) =>
+                                        alternarDisponible(t, e.target.checked)
+                                      }
+                                      title={
+                                        t.disponible
+                                          ? 'Disponible: se puede vender'
+                                          : 'Desmarcada: no se puede vender y no genera alerta'
+                                      }
+                                    />
+                                  </td>
+                                  <td className="celda-talla">{t.peg}</td>
+                                  <td>{t.usa ?? '—'}</td>
+                                  <td>{t.cm ?? '—'}</td>
+                                  <td className="celda-stock">{t.stock_actual}</td>
+                                  <td>{t.stock_minimo}</td>
+                                  <td>
+                                    <span className={`badge ${estT.clase}`}>{estT.texto}</span>
+                                  </td>
+                                  <td>
+                                    {t.disponible ? (
+                                      <button
+                                        className="btn btn-mini"
+                                        onClick={() => reponer(p, t)}
+                                      >
+                                        ＋ Reponer
+                                      </button>
+                                    ) : (
+                                      <small className="nota">—</small>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })}
                           </tbody>
                         </table>
+                        <small className="nota">
+                          Desmarcada: la talla aparece en gris, no se puede vender y no genera
+                          alerta aunque esté en 0.
+                        </small>
                       </td>
                     </tr>
                   ),
@@ -281,7 +335,7 @@ export default function Productos() {
               })}
               {filtrados.length === 0 && (
                 <tr>
-                  <td colSpan="6" className="vacio">
+                  <td colSpan="7" className="vacio">
                     Sin resultados para «{busqueda}»
                   </td>
                 </tr>

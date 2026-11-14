@@ -286,6 +286,11 @@ body {
   color: #b45309;
 }
 
+.badge-gris {
+  background: #eef1f5;
+  color: var(--texto-suave);
+}
+
 /* ---------------- Botones ---------------- */
 .btn {
   border: none;
@@ -804,6 +809,42 @@ legend {
 
 .tabla-detalle tr:last-child td {
   border-bottom: none;
+}
+
+/* ---------------- Tallas: casilla de disponibilidad ---------------- */
+.celda-codigo {
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.celda-talla {
+  font-weight: 700;
+}
+
+.col-check {
+  width: 34px;
+  text-align: center;
+}
+
+.chk-disponible {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--primario);
+  cursor: pointer;
+}
+
+/* Fila desmarcada: gris, no disponible para venta y sin alerta */
+.fila-inactiva {
+  background: #f4f5f7;
+}
+
+.fila-inactiva:hover {
+  background: #f4f5f7 !important;
+}
+
+.fila-inactiva td {
+  color: #9aa1ad;
 }
 
 /* ---------------- Responsive ---------------- */

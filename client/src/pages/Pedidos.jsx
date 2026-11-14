@@ -44,6 +44,7 @@ export default function Pedidos() {
         q &&
         !p.cliente.toLowerCase().includes(q) &&
         !p.dni.includes(q) &&
+        !String(p.codigo || '').toLowerCase().includes(q) &&
         !p.producto.toLowerCase().includes(q)
       ) {
         return false;
@@ -108,7 +109,7 @@ export default function Pedidos() {
         <input
           className="buscador"
           type="search"
-          placeholder="Buscar cliente, DNI o producto…"
+          placeholder="Buscar cliente, DNI o código…"
           value={filtros.q}
           onChange={(e) => cambiarFiltro('q', e.target.value)}
         />
