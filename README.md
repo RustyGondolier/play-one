@@ -10,8 +10,9 @@ El sistema es una **herramienta interna de gestión** (1–2 usuarios) que reemp
 |--------|--------|
 | Autenticación (propietario / ayudante) | ✅ |
 | Inventario en tiempo real con alertas de stock mínimo | ✅ |
-| Reposición de stock (entrada de mercadería con registro) | ✅ |
-| Catálogo de productos con detalle de tallas, filtros y alta (precio + tallas, sin categoría) | ✅ |
+| Reposición de stock por talla (entrada de mercadería con registro) | ✅ |
+| Catálogo real de zapatillas Adidas de fútbol: código, precio, tallas con equivalentes PEG/USA/cm y filtros | ✅ |
+| Disponibilidad por talla (casilla: desmarcada → gris, no se vende y no genera alerta) | ✅ |
 | Directorio de clientes con detección por DNI | ✅ |
 | Agencias de transporte editables (catálogo + alta desde el pedido) | ✅ |
 | Registro de pedidos (precio del producto, descuento opcional fijo, agencia por pedido, baja de stock) | ✅ |
@@ -36,11 +37,12 @@ play-one/
 │  ├─ package.json
 │  ├─ db/
 │  │   ├─ pool.js       # conexión a Neon (DATABASE_URL)
-│  │   ├─ schema.sql    # 9 tablas
-│  │   └─ seed.sql      # datos de prueba (90 SKU, 60 pedidos, 2 usuarios)
+│  │   ├─ schema.sql    # 10 tablas
+│  │   └─ seed.sql      # catálogo real Adidas (23 productos, 276 SKU),
+│  │                     # tallas con equivalentes, 60 pedidos, 2 usuarios
 │  ├─ routes/
 │  │   ├─ auth.js       # POST /api/auth/login
-│  │   ├─ skus.js       # GET /api/skus, POST /api/skus/:id/reponer
+│  │   ├─ skus.js       # GET /api/skus, PATCH /:id (disponible), POST /:id/reponer
 │  │   ├─ modelos.js    # GET/POST /api/modelos (con detalle de tallas)
 │  │   ├─ clientes.js   # GET/POST /api/clientes, GET /api/clientes/:dni
 │  │   ├─ agencias.js   # GET/POST /api/agencias
@@ -68,6 +70,8 @@ play-one/
 1. Crea una cuenta en [console.neon.tech](https://console.neon.tech) y crea un proyecto (plan Free).
 2. Copia la **connection string** (busca `sslmode=require`).
 3. En el SQL Editor de Neon ejecuta primero `server/db/schema.sql` y luego `server/db/seed.sql`.
+   El seed trae el **catálogo real del negocio** (23 productos Adidas de fútbol con su código,
+   12 tallas con equivalentes PEG/USA/cm y el stock de la plantilla Excel del curso).
 
 ### 2. Variables de entorno
 
@@ -113,17 +117,18 @@ curl http://localhost:3001/api/skus
 | Método | Ruta | Descripción |
 |--------|------|-------------|
 | POST | `/api/auth/login` | Devuelve un token JWT (8 h) |
-| GET | `/api/skus` | Los 90 SKU con precio del producto y `alerta` si está bajo el mínimo |
+| GET | `/api/skus` | Tallas disponibles a la venta con código, equivalencias USA/cm y `alerta` |
+| PATCH | `/api/skus/:id` | Marca/desmarca la casilla de disponibilidad de la talla |
 | POST | `/api/skus/:id/reponer` | Añade stock y registra el movimiento de entrada |
-| GET | `/api/modelos` | Catálogo de productos con precio, stock total y detalle de tallas |
-| POST | `/api/modelos` | Registra un producto nuevo con sus tallas y stock inicial |
+| GET | `/api/modelos` | Catálogo con código, precio, stock y detalle de tallas (disponible/alerta) |
+| POST | `/api/modelos` | Registra un producto (código, producto, precio) con las tallas desmarcadas |
 | GET | `/api/clientes` | Directorio de clientes con su cantidad de pedidos |
 | GET | `/api/clientes/:dni` | Busca un cliente por DNI (detecta clientes ya registrados) |
 | POST | `/api/clientes` | Registra un cliente nuevo |
 | GET | `/api/agencias` | Catálogo de agencias de transporte |
 | POST | `/api/agencias` | Agrega una agencia de transporte |
-| GET | `/api/pedidos` | Pedidos con agencia, comprobante, fecha de registro e historial de estados |
-| POST | `/api/pedidos` | Crea el pedido (cliente por DNI, agencia del pedido, precio del producto, descuento opcional, baja de stock) |
+| GET | `/api/pedidos` | Pedidos con código, agencia, comprobante, fecha de registro e historial de estados |
+| POST | `/api/pedidos` | Crea el pedido (cliente por DNI, valida talla disponible, agencia del pedido, descuento opcional, baja de stock) |
 | PATCH | `/api/pedidos/:id/estado` | Avanza el estado del pedido en el embudo |
 | PATCH | `/api/pedidos/:id/comprobante` | Guarda el comprobante de la agencia (solo despachado/entregado, opcional) |
 
