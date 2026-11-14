@@ -17,24 +17,33 @@ INSERT INTO usuarios (nombre, email, password_hash, rol) VALUES
 
 -- ------------------------------------------------------------
 -- 2. Catálogo: 15 modelos de zapatillas de fútbol
---    (el precio se guarda con el producto)
+--    (el precio/costo se guarda con el producto; sin categoría)
 -- ------------------------------------------------------------
-INSERT INTO modelos (nombre, categoria, precio_base) VALUES
-  ('Thunder Strike FG',   'césped natural', 149.90),
-  ('Lightning Pro FG',    'césped natural', 159.90),
-  ('Falcon Grip FG',      'césped natural', 139.90),
-  ('Elite Carbon FG',     'césped natural', 189.90),
-  ('Titan Power FG',      'césped natural', 169.90),
-  ('Viper Cut AG',        'césped artificial', 129.90),
-  ('Razor Speed AG',      'césped artificial', 139.90),
-  ('Eagle Control AG',    'césped artificial', 125.90),
-  ('Storm Play AG',       'césped artificial', 119.90),
-  ('Nitro Turf Sala',     'indoor', 109.90),
-  ('Arena Court Indoor',  'indoor', 99.90),
-  ('Futsal Pro Court',    'futsal', 95.90),
-  ('Street Futsal Low',   'futsal', 89.90),
-  ('Junior Speed AG',     'futsal', 85.90),
-  ('Kids Kick FG',        'futsal', 79.90);
+INSERT INTO modelos (nombre, precio_base) VALUES
+  ('Thunder Strike FG',   149.90),
+  ('Lightning Pro FG',    159.90),
+  ('Falcon Grip FG',      139.90),
+  ('Elite Carbon FG',     189.90),
+  ('Titan Power FG',      169.90),
+  ('Viper Cut AG',        129.90),
+  ('Razor Speed AG',      139.90),
+  ('Eagle Control AG',    125.90),
+  ('Storm Play AG',       119.90),
+  ('Nitro Turf Sala',     109.90),
+  ('Arena Court Indoor',  99.90),
+  ('Futsal Pro Court',    95.90),
+  ('Street Futsal Low',   89.90),
+  ('Junior Speed AG',     85.90),
+  ('Kids Kick FG',        79.90);
+
+-- ------------------------------------------------------------
+-- 2b. Agencias de transporte (catálogo editable desde la web)
+-- ------------------------------------------------------------
+INSERT INTO agencias (nombre) VALUES
+  ('Olva Courier'),
+  ('Shalom'),
+  ('Epack'),
+  ('InDrive');
 
 -- ------------------------------------------------------------
 -- 3. Stock: 90 SKU (15 modelos × 6 tallas, 37-42)
@@ -70,13 +79,15 @@ INSERT INTO clientes (nombre, dni, celular, distrito_destino, agencia) VALUES
 
 -- ------------------------------------------------------------
 -- 6. 60 pedidos de prueba con su estado del embudo
---    (descuento opcional: monto fijo en soles, 0 si no aplica)
+--    (descuento opcional: monto fijo en soles, 0 si no aplica;
+--     agencia del pedido = agencia del cliente)
 -- ------------------------------------------------------------
-INSERT INTO pedidos (cliente_id, sku_id, precio, descuento, estado, creado_en)
+INSERT INTO pedidos (cliente_id, sku_id, precio, descuento, agencia, estado, creado_en)
 SELECT 1 + (g % 8) AS cliente_id,
        s.id        AS sku_id,
        m.precio_base AS precio,
        CASE WHEN g % 3 = 0 THEN ((g % 4) + 1) * 5.00 ELSE 0 END AS descuento,
+       c.agencia,
        CASE WHEN g % 10 IN (0, 1) THEN 'contactado'
             WHEN g % 10 IN (2, 3) THEN 'reservado'
             WHEN g % 10 IN (4, 5) THEN 'despachado'
@@ -87,7 +98,15 @@ SELECT 1 + (g % 8) AS cliente_id,
   FROM generate_series(1, 60) AS g
   JOIN skus s     ON s.id = 1 + ((g * 7) % 90)
   JOIN modelos m  ON m.id = s.modelo_id
+  JOIN clientes c ON c.id = 1 + (g % 8)
  ORDER BY g;
+
+-- Comprobante de agencia (opcional): solo pedidos despachados/entregados
+UPDATE pedidos
+   SET comprobante = lpad(((id * 7919) % 90000000 + 10000000)::text, 8, '0')
+                  || ' - ' || chr(74 + (id % 15))
+                  || lpad(((id * 37) % 9000 + 1000)::text, 4, '0')
+ WHERE estado IN ('despachado', 'entregado');
 
 -- ------------------------------------------------------------
 -- 7. Historial de estados (auditoría del embudo)
@@ -121,10 +140,12 @@ SELECT p.id,
 
 -- Resumen
 SELECT (SELECT count(*) FROM usuarios)   AS usuarios,
+       (SELECT count(*) FROM agencias)   AS agencias,
        (SELECT count(*) FROM modelos)    AS modelos,
        (SELECT count(*) FROM skus)       AS skus,
        (SELECT count(*) FROM skus WHERE stock_actual < stock_minimo) AS skus_en_alerta,
        (SELECT count(*) FROM clientes)   AS clientes,
        (SELECT count(*) FROM pedidos)    AS pedidos,
        (SELECT count(*) FROM pedidos WHERE descuento > 0) AS con_descuento,
+       (SELECT count(*) FROM pedidos WHERE comprobante IS NOT NULL) AS con_comprobante,
        (SELECT count(*) FROM envios)     AS envios;

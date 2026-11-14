@@ -3,17 +3,28 @@ import pool from '../db/pool.js';
 
 const router = Router();
 
-// GET /api/modelos — catálogo con precio y stock total
+// GET /api/modelos — catálogo con precio, stock total y detalle de tallas
 router.get('/', async (req, res) => {
   try {
     const { rows } = await pool.query(`
       SELECT m.id,
              m.nombre,
-             m.categoria,
              m.precio_base,
              m.activo,
              COALESCE(SUM(s.stock_actual), 0)::int AS stock_total,
-             COUNT(s.id)::int AS skus
+             COUNT(s.id)::int AS skus,
+             COALESCE(
+               json_agg(
+                 json_build_object(
+                   'id',           s.id,
+                   'talla',        s.talla,
+                   'stock_actual', s.stock_actual,
+                   'stock_minimo', s.stock_minimo,
+                   'alerta',       s.stock_actual < s.stock_minimo
+                 ) ORDER BY s.talla::numeric
+               ) FILTER (WHERE s.id IS NOT NULL),
+               '[]'
+             ) AS tallas
         FROM modelos m
         LEFT JOIN skus s ON s.modelo_id = m.id
        WHERE m.activo = TRUE
@@ -28,12 +39,12 @@ router.get('/', async (req, res) => {
 });
 
 // POST /api/modelos — registra un producto nuevo con sus tallas y stock inicial
-// body: { nombre, categoria, precio_base, tallas: [37,38,...], stock_inicial, stock_minimo }
+// body: { nombre, precio_base, tallas: [37,38,...], stock_inicial, stock_minimo }
 router.post('/', async (req, res) => {
-  const { nombre, categoria, precio_base, tallas, stock_inicial, stock_minimo } = req.body || {};
+  const { nombre, precio_base, tallas, stock_inicial, stock_minimo } = req.body || {};
 
-  if (!nombre || !categoria) {
-    return res.status(400).json({ error: 'Nombre y categoría son obligatorios' });
+  if (!nombre) {
+    return res.status(400).json({ error: 'El nombre del producto es obligatorio' });
   }
   const precio = Number(precio_base);
   if (!Number.isFinite(precio) || precio <= 0) {
@@ -60,9 +71,9 @@ router.post('/', async (req, res) => {
     }
 
     const { rows } = await cliente.query(
-      `INSERT INTO modelos (nombre, categoria, precio_base)
-       VALUES ($1, $2, $3) RETURNING id`,
-      [nombre.trim(), categoria, precio]
+      `INSERT INTO modelos (nombre, precio_base)
+       VALUES ($1, $2) RETURNING id`,
+      [nombre.trim(), precio]
     );
     const modeloId = rows[0].id;
 

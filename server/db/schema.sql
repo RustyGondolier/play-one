@@ -11,6 +11,7 @@ DROP TABLE IF EXISTS movimientos_stock CASCADE;
 DROP TABLE IF EXISTS clientes CASCADE;
 DROP TABLE IF EXISTS skus CASCADE;
 DROP TABLE IF EXISTS modelos CASCADE;
+DROP TABLE IF EXISTS agencias CASCADE;
 DROP TABLE IF EXISTS usuarios CASCADE;
 
 -- Usuarios del sistema (propietario y ayudante)
@@ -24,12 +25,17 @@ CREATE TABLE usuarios (
   creado_en     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Agencias de transporte (catálogo editable desde la web)
+CREATE TABLE agencias (
+  id     SERIAL PRIMARY KEY,
+  nombre VARCHAR(60) NOT NULL UNIQUE
+);
+
 -- Modelos de zapatillas de fútbol (única línea de negocio de Play One)
--- El precio se guarda aquí, con el producto (precio_base)
+-- El precio (costo) se guarda aquí, con el producto (precio_base)
 CREATE TABLE modelos (
   id          SERIAL PRIMARY KEY,
   nombre      VARCHAR(100) NOT NULL UNIQUE,
-  categoria   VARCHAR(50) NOT NULL,          -- running, urbano, training...
   precio_base NUMERIC(10,2) NOT NULL CHECK (precio_base > 0),
   activo      BOOLEAN NOT NULL DEFAULT TRUE
 );
@@ -67,16 +73,21 @@ CREATE TABLE clientes (
 );
 
 -- Pedidos (el precio vive en el producto: modelos.precio_base;
--- el descuento es opcional, monto fijo en soles)
+-- el descuento es opcional, monto fijo en soles.
+-- La agencia es por pedido: el cliente puede cambiar de agencia
+-- en cada envío. El comprobante de la agencia es opcional y se
+-- agrega cuando el pedido está despachado.)
 CREATE TABLE pedidos (
-  id         SERIAL PRIMARY KEY,
-  cliente_id INTEGER NOT NULL REFERENCES clientes(id),
-  sku_id     INTEGER NOT NULL REFERENCES skus(id),
-  precio     NUMERIC(10,2) NOT NULL CHECK (precio >= 0),
-  descuento  NUMERIC(10,2) NOT NULL DEFAULT 0 CHECK (descuento >= 0),
-  estado     VARCHAR(20) NOT NULL DEFAULT 'contactado'
-             CHECK (estado IN ('contactado', 'reservado', 'despachado', 'entregado')),
-  creado_en  TIMESTAMPTZ NOT NULL DEFAULT now()
+  id          SERIAL PRIMARY KEY,
+  cliente_id  INTEGER NOT NULL REFERENCES clientes(id),
+  sku_id      INTEGER NOT NULL REFERENCES skus(id),
+  precio      NUMERIC(10,2) NOT NULL CHECK (precio >= 0),
+  descuento   NUMERIC(10,2) NOT NULL DEFAULT 0 CHECK (descuento >= 0),
+  agencia     VARCHAR(60),
+  comprobante VARCHAR(60),                    -- N° de comprobante de la agencia (opcional)
+  estado      VARCHAR(20) NOT NULL DEFAULT 'contactado'
+              CHECK (estado IN ('contactado', 'reservado', 'despachado', 'entregado')),
+  creado_en   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 ALTER TABLE movimientos_stock

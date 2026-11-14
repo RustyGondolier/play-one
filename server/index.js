@@ -8,6 +8,7 @@ import skusRoutes from './routes/skus.js';
 import modelosRoutes from './routes/modelos.js';
 import clientesRoutes from './routes/clientes.js';
 import pedidosRoutes from './routes/pedidos.js';
+import agenciasRoutes from './routes/agencias.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -22,6 +23,7 @@ app.use('/api/skus', skusRoutes);
 app.use('/api/modelos', modelosRoutes);
 app.use('/api/clientes', clientesRoutes);
 app.use('/api/pedidos', pedidosRoutes);
+app.use('/api/agencias', agenciasRoutes);
 
 // Health check (útil para Render)
 app.get('/api/health', (req, res) => {

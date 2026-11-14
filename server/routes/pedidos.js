@@ -5,7 +5,9 @@ const router = Router();
 
 const ORDEN_ESTADOS = ['contactado', 'reservado', 'despachado', 'entregado'];
 
-// GET /api/pedidos — lista para el tablero del embudo
+// GET /api/pedidos — lista para el tablero del embudo:
+// incluye agencia, comprobante, fecha de registro y el historial
+// con la fecha de cada cambio de estado.
 router.get('/', async (req, res) => {
   try {
     const { rows } = await pool.query(`
@@ -14,10 +16,27 @@ router.get('/', async (req, res) => {
              c.dni,
              (m.nombre || ' · ' || s.talla) AS producto,
              to_char(p.creado_en, 'DD/MM') AS fecha,
+             to_char(p.creado_en, 'YYYY-MM-DD') AS fecha_iso,
+             to_char(p.creado_en, 'DD/MM/YYYY HH24:MI') AS fecha_registro,
              p.precio,
              p.descuento,
+             p.agencia,
+             p.comprobante,
              p.estado,
-             to_char(p.creado_en, 'YYYY-MM-DD') AS fecha_iso
+             COALESCE(
+               (
+                 SELECT json_agg(
+                          json_build_object(
+                            'estado', e.estado,
+                            'fecha',  to_char(e.fecha, 'DD/MM/YYYY HH24:MI'),
+                            'fecha_iso', to_char(e.fecha, 'YYYY-MM-DD')
+                          ) ORDER BY e.fecha
+                        )
+                   FROM estados_pedido e
+                  WHERE e.pedido_id = p.id
+               ),
+               '[]'
+             ) AS historial
         FROM pedidos p
         JOIN clientes c ON c.id = p.cliente_id
         JOIN skus s     ON s.id = p.sku_id
@@ -35,6 +54,7 @@ router.get('/', async (req, res) => {
 //  - detecta/crea el cliente por DNI
 //  - toma el precio del producto (modelos.precio_base)
 //  - descuento opcional de monto fijo
+//  - la agencia es del pedido (el cliente puede cambiar de agencia)
 //  - descuenta el stock y registra el movimiento
 router.post('/', async (req, res) => {
   const { nombre, dni, celular, distrito_destino, agencia, sku_id, descuento } = req.body || {};
@@ -53,11 +73,17 @@ router.post('/', async (req, res) => {
 
     // 1. Cliente: usar el registrado por DNI o crearlo
     let clienteId;
-    const existente = await cliente.query('SELECT id FROM clientes WHERE dni = $1', [dni]);
+    let agenciaPedido = String(agencia || '').trim();
+    const existente = await cliente.query(
+      'SELECT id, agencia FROM clientes WHERE dni = $1',
+      [dni]
+    );
     if (existente.rows.length) {
       clienteId = existente.rows[0].id;
+      // si no envían agencia, se mantiene la del cliente
+      if (!agenciaPedido) agenciaPedido = existente.rows[0].agencia;
     } else {
-      if (!nombre || !celular || !distrito_destino || !agencia) {
+      if (!nombre || !celular || !distrito_destino || !agenciaPedido) {
         await cliente.query('ROLLBACK');
         return res.status(400).json({
           error: 'Cliente nuevo: completa nombre, celular, destino y agencia',
@@ -66,7 +92,7 @@ router.post('/', async (req, res) => {
       const nuevo = await cliente.query(
         `INSERT INTO clientes (nombre, dni, celular, distrito_destino, agencia)
          VALUES ($1, $2, $3, $4, $5) RETURNING id`,
-        [nombre, dni, celular, distrito_destino, agencia]
+        [nombre, dni, celular, distrito_destino, agenciaPedido]
       );
       clienteId = nuevo.rows[0].id;
     }
@@ -95,10 +121,10 @@ router.post('/', async (req, res) => {
 
     // 3. Pedido
     const pedido = await cliente.query(
-      `INSERT INTO pedidos (cliente_id, sku_id, precio, descuento, estado)
-       VALUES ($1, $2, $3, $4, 'contactado')
-       RETURNING id, precio, descuento, estado, creado_en`,
-      [clienteId, sku_id, precio_base, desc]
+      `INSERT INTO pedidos (cliente_id, sku_id, precio, descuento, agencia, estado)
+       VALUES ($1, $2, $3, $4, $5, 'contactado')
+       RETURNING id, precio, descuento, agencia, estado, creado_en`,
+      [clienteId, sku_id, precio_base, desc, agenciaPedido]
     );
     const p = pedido.rows[0];
 
@@ -163,6 +189,38 @@ router.patch('/:id/estado', async (req, res) => {
     res.status(500).json({ error: 'Error al actualizar el estado' });
   } finally {
     cliente.release();
+  }
+});
+
+// PATCH /api/pedidos/:id/comprobante  { comprobante }
+// Guarda (o limpia) el N° de comprobante de la agencia. Solo aplica
+// cuando el pedido está despachado o entregado; es opcional.
+router.patch('/:id/comprobante', async (req, res) => {
+  const { id } = req.params;
+  const comprobante = String(req.body?.comprobante ?? '').trim();
+
+  if (comprobante.length > 60) {
+    return res.status(400).json({ error: 'El comprobante no puede superar 60 caracteres' });
+  }
+
+  try {
+    const actual = await pool.query('SELECT estado FROM pedidos WHERE id = $1', [id]);
+    if (!actual.rows.length) {
+      return res.status(404).json({ error: 'Pedido no encontrado' });
+    }
+    if (!['despachado', 'entregado'].includes(actual.rows[0].estado)) {
+      return res.status(400).json({
+        error: 'El comprobante se agrega cuando el pedido está despachado',
+      });
+    }
+    await pool.query('UPDATE pedidos SET comprobante = $1 WHERE id = $2', [
+      comprobante || null,
+      id,
+    ]);
+    res.json({ ok: true, comprobante: comprobante || null });
+  } catch (err) {
+    console.error('[pedidos/comprobante]', err.message);
+    res.status(500).json({ error: 'Error al guardar el comprobante' });
   }
 });
 

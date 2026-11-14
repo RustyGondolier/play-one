@@ -12,7 +12,6 @@ router.get('/', async (req, res) => {
       SELECT s.id,
              s.modelo_id,
              m.nombre AS modelo,
-             m.categoria,
              m.precio_base,
              s.talla,
              s.stock_actual,

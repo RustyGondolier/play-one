@@ -30,12 +30,14 @@ try {
 
   const { rows } = await pool.query(`
     SELECT (SELECT count(*) FROM usuarios)   AS usuarios,
+           (SELECT count(*) FROM agencias)   AS agencias,
            (SELECT count(*) FROM modelos)    AS modelos,
            (SELECT count(*) FROM skus)       AS skus,
            (SELECT count(*) FROM skus WHERE stock_actual < stock_minimo) AS en_alerta,
            (SELECT count(*) FROM clientes)   AS clientes,
            (SELECT count(*) FROM pedidos)    AS pedidos,
            (SELECT count(*) FROM pedidos WHERE descuento > 0) AS con_descuento,
+           (SELECT count(*) FROM pedidos WHERE comprobante IS NOT NULL) AS con_comprobante,
            (SELECT count(*) FROM envios)     AS envios
   `);
   console.log('✔ Base de datos lista:', rows[0]);
