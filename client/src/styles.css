@@ -559,6 +559,85 @@ legend {
   color: var(--texto-suave);
 }
 
+/* ---------------- Cancelados (fuera del embudo) ---------------- */
+/* El rojo queda solo como borde/texto de alerta, nunca como bloque. */
+.cancelados {
+  margin-top: 18px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  background: #f7f8fa;
+}
+
+.cancelados > summary {
+  cursor: pointer;
+  padding: 13px 16px;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--texto-suave);
+  user-select: none;
+}
+
+.cancelados > summary:hover {
+  color: var(--texto);
+}
+
+.cancelados-lista {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 12px;
+  padding: 0 16px 16px;
+}
+
+.tarjeta-pedido.cancelada {
+  background: #fbfbfc;
+  border-style: dashed;
+  border-color: #d8dbe1;
+  box-shadow: none;
+}
+
+.badge-cancelado {
+  background: var(--alerta-fondo);
+  color: var(--alerta-oscuro);
+}
+
+.tarjeta-cancelacion {
+  color: var(--alerta-oscuro);
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+.tarjeta-acciones {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-cancelar {
+  background: #fff;
+  border: 1px solid var(--alerta);
+  color: var(--alerta-oscuro);
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
+.btn-cancelar:hover:not(:disabled) {
+  background: var(--alerta-fondo);
+  filter: none;
+}
+
+.btn-reactivar {
+  background: var(--primario-suave);
+  border: 1px solid var(--primario);
+  color: var(--primario-oscuro);
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
+.btn-reactivar:hover:not(:disabled) {
+  background: #dbe9ff;
+  filter: none;
+}
+
 /* ---------------- Hoja de envío ---------------- */
 .hoja-pdf {
   background: #fff;
@@ -845,6 +924,52 @@ legend {
 
 .fila-inactiva td {
   color: #9aa1ad;
+}
+
+/* ---------------- Stock mínimo editable ---------------- */
+/* La dirección ocupa todo el ancho del formulario */
+.campo-ancho {
+  grid-column: 1 / -1;
+}
+
+.texto-suave {
+  color: var(--texto-suave);
+}
+
+.aplicar-minimo {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.aplicar-minimo label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--texto-suave);
+}
+
+.aplicar-minimo input {
+  width: 110px;
+}
+
+.input-minimo {
+  width: 76px;
+  padding: 5px 7px;
+  font-size: 13px;
+  border: 1px solid var(--borde);
+  border-radius: 6px;
+  background: #fff;
+}
+
+.input-minimo:focus {
+  outline: none;
+  border-color: var(--primario);
+  box-shadow: 0 0 0 3px var(--primario-suave);
 }
 
 /* ---------------- Responsive ---------------- */

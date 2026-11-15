@@ -1,7 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import api from '../api.js';
 
-const VACIO = { nombre: '', dni: '', celular: '', distrito_destino: '', agencia: 'Olva Courier' };
+const VACIO = {
+  nombre: '',
+  dni: '',
+  celular: '',
+  distrito_destino: '',
+  direccion: '',
+  agencia: 'Olva Courier',
+};
 
 export default function Clientes() {
   const [clientes, setClientes] = useState([]);
@@ -11,6 +18,8 @@ export default function Clientes() {
   const [exito, setExito] = useState('');
   const [busqueda, setBusqueda] = useState('');
   const [mostrarForm, setMostrarForm] = useState(false);
+  const [editando, setEditando] = useState(null); // id del cliente que se edita
+  const [enviando, setEnviando] = useState(false);
   const [form, setForm] = useState(VACIO);
 
   function cargar() {
@@ -36,7 +45,9 @@ export default function Clientes() {
       (c) =>
         c.nombre.toLowerCase().includes(q) ||
         c.dni.includes(q) ||
-        c.distrito_destino.toLowerCase().includes(q)
+        c.distrito_destino.toLowerCase().includes(q) ||
+        (c.direccion || '').toLowerCase().includes(q) ||
+        c.agencia.toLowerCase().includes(q)
     );
   }, [clientes, busqueda]);
 
@@ -44,18 +55,63 @@ export default function Clientes() {
     setForm((f) => ({ ...f, [campo]: valor }));
   }
 
+  function abrirNuevo() {
+    setEditando(null);
+    setForm(VACIO);
+    setMostrarForm(true);
+    setError('');
+    setExito('');
+  }
+
+  function abrirEdicion(c) {
+    setEditando(c.id);
+    setForm({
+      nombre: c.nombre,
+      dni: c.dni,
+      celular: c.celular,
+      distrito_destino: c.distrito_destino,
+      direccion: c.direccion || '',
+      agencia: c.agencia,
+    });
+    setMostrarForm(true);
+    setError('');
+    setExito('');
+  }
+
+  function cancelar() {
+    setMostrarForm(false);
+    setEditando(null);
+    setForm(VACIO);
+    setError('');
+  }
+
   async function guardar(e) {
     e.preventDefault();
     setError('');
     setExito('');
-    try {
-      await api.post('/clientes', form);
-      setExito(`Cliente ${form.nombre} registrado correctamente.`);
-      setForm(VACIO);
-      setMostrarForm(false);
-      cargar();
-    } catch (err) {
-      setError(err.message);
+    if (editando) {
+      // editar cliente existente (el DNI también, con control de duplicado)
+      try {
+        await api.patch(`/clientes/${editando}`, form);
+        setExito(`Datos de ${form.nombre} actualizados.`);
+        cancelar();
+        cargar();
+      } catch (err) {
+        setError(err.message);
+      }
+    } else {
+      setEnviando(true);
+      try {
+        await api.post('/clientes', form);
+        setExito(`Cliente ${form.nombre} registrado correctamente.`);
+        setForm(VACIO);
+        setMostrarForm(false);
+        cargar();
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setEnviando(false);
+      }
     }
   }
 
@@ -64,18 +120,18 @@ export default function Clientes() {
       <header className="pagina-titulo">
         <div>
           <h1>Clientes</h1>
-          <p>Directorio de clientes: no hace falta volver a escribir sus datos</p>
+          <p>Dirección exacta de entrega, destino y agencia de cada cliente</p>
         </div>
         <div className="acciones-titulo">
           <input
             className="buscador"
             type="search"
-            placeholder="Buscar por nombre, DNI o destino…"
+            placeholder="Buscar por nombre, DNI o dirección…"
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
           />
-          <button className="btn btn-primario" onClick={() => setMostrarForm((v) => !v)}>
-            {mostrarForm ? 'Cancelar' : '＋ Nuevo cliente'}
+          <button className="btn btn-primario" onClick={abrirNuevo}>
+            {mostrarForm && !editando ? 'Cancelar' : '＋ Nuevo cliente'}
           </button>
         </div>
       </header>
@@ -86,7 +142,7 @@ export default function Clientes() {
       {mostrarForm && (
         <form className="formulario" onSubmit={guardar}>
           <fieldset>
-            <legend>Datos del cliente</legend>
+            <legend>{editando ? `Editando a ${form.nombre}` : 'Datos del cliente'}</legend>
             <div className="campo-grid">
               <label>
                 Nombre y apellido *
@@ -128,6 +184,16 @@ export default function Clientes() {
                   required
                 />
               </label>
+              <label className="campo-ancho">
+                Dirección de entrega *
+                <input
+                  type="text"
+                  placeholder="Ej. Av. Ejército 215, Urb. San Andrés"
+                  value={form.direccion}
+                  onChange={(e) => cambiar('direccion', e.target.value)}
+                  required
+                />
+              </label>
               <label>
                 Agencia de transporte *
                 <select value={form.agencia} onChange={(e) => cambiar('agencia', e.target.value)}>
@@ -137,10 +203,24 @@ export default function Clientes() {
                 </select>
               </label>
             </div>
+            <small className="nota">
+              {editando
+                ? 'El DNI también es editable: si lo cambias, se valida que no lo tenga otro cliente.'
+                : 'La dirección es obligatoria: es donde se entregará el pedido.'}
+            </small>
             <div className="formulario-acciones">
-              <button className="btn btn-primario" type="submit">
-                Guardar cliente
+              <button className="btn btn-primario" type="submit" disabled={enviando}>
+                {editando
+                  ? 'Guardar cambios'
+                  : enviando
+                    ? 'Registrando…'
+                    : 'Guardar cliente'}
               </button>
+              {editando && (
+                <button className="btn btn-secundario" type="button" onClick={cancelar}>
+                  Cancelar
+                </button>
+              )}
             </div>
           </fieldset>
         </form>
@@ -157,8 +237,10 @@ export default function Clientes() {
                 <th>DNI</th>
                 <th>Celular</th>
                 <th>Destino</th>
+                <th>Dirección de entrega</th>
                 <th>Agencia</th>
                 <th>Pedidos</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -168,15 +250,23 @@ export default function Clientes() {
                   <td>{c.dni}</td>
                   <td>{c.celular}</td>
                   <td>{c.distrito_destino}</td>
+                  <td title={c.direccion}>
+                    {c.direccion || <span className="texto-suave">Sin dirección</span>}
+                  </td>
                   <td>{c.agencia}</td>
                   <td>
                     <span className="badge badge-descuento">{c.pedidos}</span>
+                  </td>
+                  <td>
+                    <button className="btn btn-mini" onClick={() => abrirEdicion(c)}>
+                      ✎ Editar
+                    </button>
                   </td>
                 </tr>
               ))}
               {filtrados.length === 0 && (
                 <tr>
-                  <td colSpan="6" className="vacio">
+                  <td colSpan="8" className="vacio">
                     Sin resultados para «{busqueda}»
                   </td>
                 </tr>

@@ -13,6 +13,7 @@ router.get('/', async (req, res) => {
              m.codigo,
              m.nombre,
              m.precio_base,
+             m.stock_minimo_default,
              m.activo,
              COALESCE(SUM(s.stock_actual) FILTER (WHERE s.disponible), 0)::int AS stock_total,
              COUNT(s.id) FILTER (WHERE s.disponible)::int AS tallas_disponibles,
@@ -101,6 +102,49 @@ router.post('/', async (req, res) => {
     }
     console.error('[modelos/post]', err.message);
     res.status(500).json({ error: 'Error al registrar el producto' });
+  } finally {
+    cliente.release();
+  }
+});
+
+// PATCH /api/modelos/:id  { stock_minimo_default, aplicar_a_todas? }
+// Cambia el stock mínimo BASE del producto. Si aplicar_a_todas es true,
+// el mismo valor se aplica a todas las tallas de ese producto.
+router.patch('/:id', async (req, res) => {
+  const { id } = req.params;
+  const { aplicar_a_todas } = req.body || {};
+  const minimo = Number(req.body?.stock_minimo_default);
+
+  if (!Number.isInteger(minimo) || minimo < 0) {
+    return res.status(400).json({ error: 'El stock mínimo debe ser un número entero mayor o igual a 0' });
+  }
+
+  const cliente = await pool.connect();
+  try {
+    await cliente.query('BEGIN');
+    const actualizado = await cliente.query(
+      'UPDATE modelos SET stock_minimo_default = $1 WHERE id = $2 RETURNING id, stock_minimo_default',
+      [minimo, id]
+    );
+    if (!actualizado.rows.length) {
+      await cliente.query('ROLLBACK');
+      return res.status(404).json({ error: 'Producto no encontrado' });
+    }
+
+    let tallas = 0;
+    if (aplicar_a_todas) {
+      const r = await cliente.query(
+        'UPDATE skus SET stock_minimo = $1 WHERE modelo_id = $2',
+        [minimo, id]
+      );
+      tallas = r.rowCount;
+    }
+    await cliente.query('COMMIT');
+    res.json({ ok: true, stock_minimo_default: minimo, tallas_actualizadas: tallas });
+  } catch (err) {
+    await cliente.query('ROLLBACK');
+    console.error('[modelos/patch]', err.message);
+    res.status(500).json({ error: 'Error al actualizar el stock mínimo' });
   } finally {
     cliente.release();
   }

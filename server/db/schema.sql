@@ -44,13 +44,16 @@ CREATE TABLE tallas (
 );
 
 -- Modelos de zapatillas de fútbol (solo Adidas; única línea de negocio)
--- El precio (costo) se guarda aquí, con el producto (precio_base)
+-- El precio (costo) se guarda aquí, con el producto (precio_base).
+-- stock_minimo_default es el mínimo del producto: se usa para las
+-- tallas nuevas y se puede propagar a todas las tallas con un clic.
 CREATE TABLE modelos (
-  id          SERIAL PRIMARY KEY,
-  codigo      VARCHAR(20) NOT NULL UNIQUE,  -- código del producto (p.ej. KJ3418)
-  nombre      VARCHAR(120) NOT NULL UNIQUE,
-  precio_base NUMERIC(10,2) NOT NULL CHECK (precio_base > 0),
-  activo      BOOLEAN NOT NULL DEFAULT TRUE
+  id                  SERIAL PRIMARY KEY,
+  codigo              VARCHAR(20) NOT NULL UNIQUE,  -- código del producto (p.ej. KJ3418)
+  nombre              VARCHAR(120) NOT NULL UNIQUE,
+  precio_base         NUMERIC(10,2) NOT NULL CHECK (precio_base > 0),
+  stock_minimo_default INTEGER NOT NULL DEFAULT 1,
+  activo              BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 -- Stock por modelo × talla. "disponible" es la casilla por talla:
@@ -78,12 +81,15 @@ CREATE TABLE movimientos_stock (
 );
 
 -- Clientes (datos personales: acceso restringido, no se publican)
+-- distrito_destino = distrito/ciudad; direccion = dirección exacta
+-- donde se entrega el pedido.
 CREATE TABLE clientes (
   id               SERIAL PRIMARY KEY,
   nombre           VARCHAR(120) NOT NULL,
-  dni              VARCHAR(12) NOT NULL,
+  dni              VARCHAR(12) NOT NULL UNIQUE,
   celular          VARCHAR(20) NOT NULL,
   distrito_destino VARCHAR(80) NOT NULL,
+  direccion        VARCHAR(200) NOT NULL DEFAULT '',
   agencia          VARCHAR(60) NOT NULL,       -- agencia de transporte
   creado_en        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -93,17 +99,26 @@ CREATE TABLE clientes (
 -- La agencia es por pedido: el cliente puede cambiar de agencia
 -- en cada envío. El comprobante de la agencia es opcional y se
 -- agrega cuando el pedido está despachado.)
+-- Agencia, destino y dirección se guardan COPIADOS del cliente al
+-- crear el pedido: si el cliente se muda después, los pedidos viejos
+-- conservan la dirección con la que se entregaron.
+-- 'cancelado': el cliente se arrepiente ANTES del despacho (contactado
+-- o reservado); al cancelar la unidad vuelve al inventario y el motivo
+-- se guarda en motivo_cancelacion (opcional). No aplica a despachados.
 CREATE TABLE pedidos (
-  id          SERIAL PRIMARY KEY,
-  cliente_id  INTEGER NOT NULL REFERENCES clientes(id),
-  sku_id      INTEGER NOT NULL REFERENCES skus(id),
-  precio      NUMERIC(10,2) NOT NULL CHECK (precio >= 0),
-  descuento   NUMERIC(10,2) NOT NULL DEFAULT 0 CHECK (descuento >= 0),
-  agencia     VARCHAR(60),
-  comprobante VARCHAR(60),                    -- N° de comprobante de la agencia (opcional)
-  estado      VARCHAR(20) NOT NULL DEFAULT 'contactado'
-              CHECK (estado IN ('contactado', 'reservado', 'despachado', 'entregado')),
-  creado_en   TIMESTAMPTZ NOT NULL DEFAULT now()
+  id                 SERIAL PRIMARY KEY,
+  cliente_id         INTEGER NOT NULL REFERENCES clientes(id),
+  sku_id             INTEGER NOT NULL REFERENCES skus(id),
+  precio             NUMERIC(10,2) NOT NULL CHECK (precio >= 0),
+  descuento          NUMERIC(10,2) NOT NULL DEFAULT 0 CHECK (descuento >= 0),
+  agencia            VARCHAR(60),
+  distrito_destino   VARCHAR(80) NOT NULL DEFAULT '',
+  direccion          VARCHAR(200) NOT NULL DEFAULT '',
+  comprobante        VARCHAR(60),                    -- N° de comprobante de la agencia (opcional)
+  motivo_cancelacion VARCHAR(200) NOT NULL DEFAULT '', -- por qué se canceló (opcional)
+  estado             VARCHAR(20) NOT NULL DEFAULT 'contactado'
+                     CHECK (estado IN ('contactado', 'reservado', 'despachado', 'entregado', 'cancelado')),
+  creado_en          TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 ALTER TABLE movimientos_stock
@@ -114,7 +129,7 @@ CREATE TABLE estados_pedido (
   id          SERIAL PRIMARY KEY,
   pedido_id   INTEGER NOT NULL REFERENCES pedidos(id),
   estado      VARCHAR(20) NOT NULL
-              CHECK (estado IN ('contactado', 'reservado', 'despachado', 'entregado')),
+              CHECK (estado IN ('contactado', 'reservado', 'despachado', 'entregado', 'cancelado')),
   fecha       TIMESTAMPTZ NOT NULL DEFAULT now(),
   usuario_id  INTEGER REFERENCES usuarios(id)
 );

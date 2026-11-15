@@ -19,6 +19,8 @@ export default function Productos() {
 
   // detalle de tallas abierto
   const [abierto, setAbierto] = useState(null); // id del producto
+  // valor del input "mínimo para todas las tallas" del detalle abierto
+  const [minimoAplicar, setMinimoAplicar] = useState('');
 
   // formulario de alta: solo código, producto y precio
   const [mostrarForm, setMostrarForm] = useState(false);
@@ -83,6 +85,51 @@ export default function Productos() {
           ? `Talla ${sku.peg}: marcada como disponible.`
           : `Talla ${sku.peg}: desmarcada (no se podrá vender ni generará alerta).`
       );
+      cargar();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  // Editar el stock mínimo de UNA talla (guarda al salir del campo)
+  async function guardarMinimoTalla(sku, valor) {
+    const minimo = Number(valor);
+    if (!Number.isInteger(minimo) || minimo < 0) {
+      setError('El stock mínimo debe ser un número entero mayor o igual a 0');
+      cargar();
+      return;
+    }
+    if (minimo === Number(sku.stock_minimo)) return;
+    setError('');
+    setExito('');
+    try {
+      await api.patch(`/skus/${sku.sku_id}`, { stock_minimo: minimo });
+      setExito(
+        `Talla ${sku.peg}: stock mínimo ahora ${minimo}` +
+          (minimo > Number(sku.stock_actual) ? ' (queda bajo el mínimo).' : '.')
+      );
+      cargar();
+    } catch (err) {
+      setError(err.message);
+      cargar();
+    }
+  }
+
+  // Stock mínimo BASE del producto + propagación a todas sus tallas
+  async function aplicarATodas(producto) {
+    const minimo = Number(minimoAplicar);
+    if (!Number.isInteger(minimo) || minimo < 0) {
+      setError('El stock mínimo debe ser un número entero mayor o igual a 0');
+      return;
+    }
+    setError('');
+    setExito('');
+    try {
+      await api.patch(`/modelos/${producto.id}`, {
+        stock_minimo_default: minimo,
+        aplicar_a_todas: true,
+      });
+      setExito(`${producto.nombre}: stock mínimo ${minimo} aplicado a sus ${producto.tallas} tallas.`);
       cargar();
     } catch (err) {
       setError(err.message);
@@ -257,7 +304,11 @@ export default function Productos() {
                     <td>
                       <button
                         className="btn btn-mini"
-                        onClick={() => setAbierto(expandido ? null : p.id)}
+                        onClick={() => {
+                          const nuevo = expandido ? null : p.id;
+                          setAbierto(nuevo);
+                          if (nuevo) setMinimoAplicar(String(p.stock_minimo_default ?? 1));
+                        }}
                       >
                         {expandido ? 'Ocultar tallas ▴' : 'Ver tallas ▾'}
                       </button>
@@ -266,6 +317,28 @@ export default function Productos() {
                   expandido && (
                     <tr key={`${p.id}-det`} className="fila-detalle">
                       <td colSpan="7">
+                        <div className="aplicar-minimo">
+                          <label>
+                            Stock mínimo para todas las tallas
+                            <input
+                              type="number"
+                              min="0"
+                              step="1"
+                              value={minimoAplicar}
+                              onChange={(e) => setMinimoAplicar(e.target.value)}
+                            />
+                          </label>
+                          <button
+                            className="btn btn-mini"
+                            onClick={() => aplicarATodas(p)}
+                            title="Cambia el mínimo del producto y lo aplica a todas sus tallas"
+                          >
+                            Aplicar a todas
+                          </button>
+                          <small className="nota">
+                            También puedes cambiarlo talla por talla en la columna "Stock mínimo".
+                          </small>
+                        </div>
                         <table className="tabla-detalle">
                           <thead>
                             <tr>
@@ -303,7 +376,21 @@ export default function Productos() {
                                   <td>{t.usa ?? '—'}</td>
                                   <td>{t.cm ?? '—'}</td>
                                   <td className="celda-stock">{t.stock_actual}</td>
-                                  <td>{t.stock_minimo}</td>
+                                  <td>
+                                    <input
+                                      key={`min-${t.sku_id}-${t.stock_minimo}`}
+                                      className="input-minimo"
+                                      type="number"
+                                      min="0"
+                                      step="1"
+                                      defaultValue={t.stock_minimo}
+                                      title="Stock mínimo de esta talla (Enter o salir del campo para guardar)"
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') e.target.blur();
+                                      }}
+                                      onBlur={(e) => guardarMinimoTalla(t, e.target.value)}
+                                    />
+                                  </td>
                                   <td>
                                     <span className={`badge ${estT.clase}`}>{estT.texto}</span>
                                   </td>

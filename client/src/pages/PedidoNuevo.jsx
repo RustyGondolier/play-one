@@ -7,6 +7,7 @@ const VACIO_CLIENTE = {
   dni: '',
   celular: '',
   distrito_destino: '',
+  direccion: '',
   agencia: 'Olva Courier',
 };
 
@@ -82,6 +83,7 @@ export default function PedidoNuevo() {
         dni: c.dni,
         celular: c.celular,
         distrito_destino: c.distrito_destino,
+        direccion: c.direccion || '',
         agencia: c.agencia,
       });
       setClienteExistente(true);
@@ -104,7 +106,12 @@ export default function PedidoNuevo() {
     if (!skuId) return setError('Selecciona la talla del producto');
     if (desc > precio) return setError('El descuento no puede superar el precio del producto');
     if (clienteExistente === false && (!cliente.nombre || !cliente.celular)) {
-      return setError('Cliente nuevo: completa nombre, celular, destino y agencia');
+      return setError('Cliente nuevo: completa nombre, celular, destino y dirección');
+    }
+    if (!String(cliente.direccion || '').trim()) {
+      return setError(
+        'Falta la dirección de entrega: escríbela aquí o actualízala en la página de Clientes'
+      );
     }
     if (cliente.agencia === NUEVA_AGENCIA && !nuevaAgencia.trim()) {
       return setError('Escribe el nombre de la nueva agencia');
@@ -219,6 +226,16 @@ export default function PedidoNuevo() {
                 required={clienteExistente !== true}
               />
             </label>
+            <label className="campo-ancho">
+              Dirección de entrega *
+              <input
+                type="text"
+                placeholder="Ej. Av. Ejército 215, Urb. San Andrés"
+                value={cliente.direccion}
+                onChange={(e) => cambiarCliente('direccion', e.target.value)}
+                required
+              />
+            </label>
             <label>
               Agencia de transporte *
               <select
@@ -250,7 +267,8 @@ export default function PedidoNuevo() {
             <small className={`nota ${clienteExistente ? 'nota-exito' : ''}`}>{avisoCliente}</small>
           )}
           <small className="nota">
-            La agencia es de este pedido: puedes cambiarla aunque el cliente ya esté registrado.
+            La agencia y la dirección son de este pedido: se copian del cliente y puedes
+            cambiarlas aquí (queda guardada con el pedido aunque el cliente la modifique después).
           </small>
         </fieldset>
 

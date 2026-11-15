@@ -83,7 +83,7 @@ INSERT INTO modelos (codigo, nombre, precio_base) VALUES
 --    tallas que el negocio maneja, con su stock real del Excel.
 -- ------------------------------------------------------------
 INSERT INTO skus (modelo_id, talla_id, stock_actual, stock_minimo, disponible)
-SELECT m.id, t.id, 0, 1, FALSE
+SELECT m.id, t.id, 0, m.stock_minimo_default, FALSE
   FROM modelos m
   CROSS JOIN tallas t;
 
@@ -127,15 +127,15 @@ SELECT s.id, 'entrada', s.stock_actual, 'Inventario inicial (plantilla Excel)'
 -- ------------------------------------------------------------
 -- 7. Clientes (datos de prueba)
 -- ------------------------------------------------------------
-INSERT INTO clientes (nombre, dni, celular, distrito_destino, agencia) VALUES
-  ('María Quispe',      '45678912', '987654321', 'Arequipa',    'Olva Courier'),
-  ('Juan Rojas',        '41234567', '912345678', 'Lima',        'Shalom'),
-  ('Lucía Flores',      '46789012', '998877665', 'Cusco',       'Olva Courier'),
-  ('Carlos Medina',     '42345678', '976543210', 'Trujillo',    'Epack'),
-  ('Ana Torres',        '48901234', '965432108', 'Piura',       'Shalom'),
-  ('Luis Mendoza',      '43456789', '954321097', 'Arequipa',    'Olva Courier'),
-  ('Rosa Paredes',      '49012345', '943210986', 'Chiclayo',    'Epack'),
-  ('Diego Castillo',    '44567890', '932109875', 'Arequipa',    'Olva Courier');
+INSERT INTO clientes (nombre, dni, celular, distrito_destino, direccion, agencia) VALUES
+  ('María Quispe',      '45678912', '987654321', 'Arequipa',    'Av. Ejército 215, Urb. San Andrés',      'Olva Courier'),
+  ('Juan Rojas',        '41234567', '912345678', 'Lima',        'Jr. Camaná 145, Cercado de Lima',         'Shalom'),
+  ('Lucía Flores',      '46789012', '998877665', 'Cusco',       'Av. El Sol 812, Wanchaq',                 'Olva Courier'),
+  ('Carlos Medina',     '42345678', '976543210', 'Trujillo',    'Av. América Nte. 640, Urb. California',   'Epack'),
+  ('Ana Torres',        '48901234', '965432108', 'Piura',       'Calle Castilla 310, Centro',              'Shalom'),
+  ('Luis Mendoza',      '43456789', '954321097', 'Arequipa',    'Av. Parra 155, Yanahuara',                'Olva Courier'),
+  ('Rosa Paredes',      '49012345', '943210986', 'Chiclayo',    'Av. Arica 405, Los Ejidos',               'Epack'),
+  ('Diego Castillo',    '44567890', '932109875', 'Arequipa',    'Urb. Márquez 234, José Luis Bustamante',  'Olva Courier');
 
 -- ------------------------------------------------------------
 -- 8. 60 pedidos de prueba sobre las tallas disponibles
@@ -146,12 +146,14 @@ WITH activos AS (
   SELECT row_number() OVER (ORDER BY id) - 1 AS rn, id FROM skus WHERE disponible
 ),
 total AS (SELECT count(*) AS n FROM activos)
-INSERT INTO pedidos (cliente_id, sku_id, precio, descuento, agencia, estado, creado_en)
+INSERT INTO pedidos (cliente_id, sku_id, precio, descuento, agencia, distrito_destino, direccion, estado, creado_en)
 SELECT 1 + (g % 8) AS cliente_id,
        a.id        AS sku_id,
        m.precio_base AS precio,
        CASE WHEN g % 3 = 0 THEN ((g % 4) + 1) * 5.00 ELSE 0 END AS descuento,
        c.agencia,
+       c.distrito_destino,
+       c.direccion,
        CASE WHEN g % 10 IN (0, 1) THEN 'contactado'
             WHEN g % 10 IN (2, 3) THEN 'reservado'
             WHEN g % 10 IN (4, 5) THEN 'despachado'
@@ -162,6 +164,41 @@ SELECT 1 + (g % 8) AS cliente_id,
   FROM generate_series(1, 60) AS g
   JOIN total ON TRUE
   JOIN activos a ON a.rn = g % total.n
+  JOIN skus s     ON s.id = a.id
+  JOIN modelos m  ON m.id = s.modelo_id
+  JOIN clientes c ON c.id = 1 + (g % 8)
+ ORDER BY g;
+
+-- ------------------------------------------------------------
+-- 8b. 4 pedidos CANCELADOS: el cliente se arrepintió antes del
+--     despacho. La unidad nunca salió de la bodega, por eso el
+--     seed no les descuenta stock ni registra salida (mismo
+--     criterio que los pedidos activos, que tampoco generan
+--     movimientos: el stock real es el del Excel).
+-- ------------------------------------------------------------
+WITH activos AS (
+  SELECT row_number() OVER (ORDER BY id) - 1 AS rn, id FROM skus WHERE disponible
+),
+total AS (SELECT count(*) AS n FROM activos)
+INSERT INTO pedidos (cliente_id, sku_id, precio, descuento, agencia, distrito_destino, direccion, motivo_cancelacion, estado, creado_en)
+SELECT 1 + (g % 8) AS cliente_id,
+       a.id        AS sku_id,
+       m.precio_base AS precio,
+       0           AS descuento,
+       c.agencia,
+       c.distrito_destino,
+       c.direccion,
+       (ARRAY[ 'Se arrepintió del color',
+               'El cliente ya compró en otra tienda',
+               'No había stock en la talla que quería',
+               'Encontró el mismo modelo más barato por WhatsApp' ])[g] AS motivo_cancelacion,
+       'cancelado' AS estado,
+       now()
+         - ((g % 20) || ' days')::interval
+         - ((g % 12) || ' hours')::interval AS creado_en
+  FROM generate_series(1, 4) AS g
+  JOIN total ON TRUE
+  JOIN activos a ON a.rn = (g * 5) % total.n
   JOIN skus s     ON s.id = a.id
   JOIN modelos m  ON m.id = s.modelo_id
   JOIN clientes c ON c.id = 1 + (g % 8)
@@ -191,6 +228,12 @@ SELECT p.id, 'despachado', p.creado_en + interval '1 day', 1
 INSERT INTO estados_pedido (pedido_id, estado, fecha, usuario_id)
 SELECT p.id, 'entregado', p.creado_en + interval '4 days', 1
   FROM pedidos p WHERE p.estado = 'entregado';
+
+-- Los cancelados registran el 'contactado' (arriba) y luego la
+-- cancelación, ocurrida un día después de crear el pedido
+INSERT INTO estados_pedido (pedido_id, estado, fecha, usuario_id)
+SELECT p.id, 'cancelado', p.creado_en + interval '1 day', 1
+  FROM pedidos p WHERE p.estado = 'cancelado';
 
 -- ------------------------------------------------------------
 -- 10. Envíos (para pedidos despachados y entregados)

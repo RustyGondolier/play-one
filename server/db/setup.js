@@ -37,7 +37,10 @@ try {
            (SELECT count(*) FROM skus WHERE disponible) AS disponibles,
            (SELECT count(*) FROM skus WHERE disponible AND stock_actual < stock_minimo) AS en_alerta,
            (SELECT count(*) FROM clientes)   AS clientes,
+           (SELECT count(*) FROM clientes WHERE direccion <> '') AS con_direccion,
            (SELECT count(*) FROM pedidos)    AS pedidos,
+           (SELECT count(*) FROM pedidos WHERE direccion <> '') AS pedidos_con_direccion,
+           (SELECT count(*) FROM pedidos WHERE estado = 'cancelado') AS cancelados,
            (SELECT count(*) FROM pedidos WHERE descuento > 0) AS con_descuento,
            (SELECT count(*) FROM pedidos WHERE comprobante IS NOT NULL) AS con_comprobante,
            (SELECT count(*) FROM envios)     AS envios

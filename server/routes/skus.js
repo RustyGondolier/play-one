@@ -34,24 +34,47 @@ router.get('/', async (req, res) => {
   }
 });
 
-// PATCH /api/skus/:id  { disponible }
-// Marca/desmarca la casilla de disponibilidad de la talla.
-// Desmarcada: no se puede vender y no genera alerta.
+// PATCH /api/skus/:id  { disponible?, stock_minimo? }
+// - disponible: marca/desmarca la casilla de la talla. Desmarcada: no se
+//   puede vender y no genera alerta.
+// - stock_minimo: mínimo de ESTA talla (edita el umbral de alerta).
 router.patch('/:id', async (req, res) => {
   const { id } = req.params;
-  if (typeof req.body?.disponible !== 'boolean') {
+  const { disponible, stock_minimo } = req.body || {};
+
+  if (disponible !== undefined && typeof disponible !== 'boolean') {
     return res.status(400).json({ error: 'El campo disponible debe ser true o false' });
   }
 
+  const cambios = [];
+  const valores = [];
+  if (disponible !== undefined) {
+    valores.push(disponible);
+    cambios.push(`disponible = $${valores.length}`);
+  }
+  if (stock_minimo !== undefined) {
+    const minimo = Number(stock_minimo);
+    if (!Number.isInteger(minimo) || minimo < 0) {
+      return res.status(400).json({ error: 'El stock mínimo debe ser un número entero mayor o igual a 0' });
+    }
+    valores.push(minimo);
+    cambios.push(`stock_minimo = $${valores.length}`);
+  }
+  if (!cambios.length) {
+    return res.status(400).json({ error: 'Indica qué campo cambiar: disponible o stock_minimo' });
+  }
+
+  valores.push(id);
   try {
     const { rows } = await pool.query(
-      `UPDATE skus SET disponible = $1
-        WHERE id = $2
-        RETURNING id, disponible`,
-      [req.body.disponible, id]
+      `UPDATE skus SET ${cambios.join(', ')}
+        WHERE id = $${valores.length}
+        RETURNING id, disponible, stock_minimo, stock_actual,
+                  (stock_actual < stock_minimo) AS alerta`,
+      valores
     );
     if (!rows.length) return res.status(404).json({ error: 'SKU no encontrado' });
-    res.json({ ok: true, disponible: rows[0].disponible });
+    res.json({ ok: true, ...rows[0] });
   } catch (err) {
     console.error('[skus/patch]', err.message);
     res.status(500).json({ error: 'Error al actualizar la talla' });

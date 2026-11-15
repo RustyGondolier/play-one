@@ -14,10 +14,14 @@ El sistema es una **herramienta interna de gestión** (1–2 usuarios) que reemp
 | Catálogo real de zapatillas Adidas de fútbol: código, precio, tallas con equivalentes PEG/USA/cm y filtros | ✅ |
 | Disponibilidad por talla (casilla: desmarcada → gris, no se vende y no genera alerta) | ✅ |
 | Directorio de clientes con detección por DNI | ✅ |
+| Edición de clientes (incluido el DNI con control de duplicado) | ✅ |
+| Dirección exacta de entrega en el cliente (obligatoria) y copiada al pedido | ✅ |
+| Stock mínimo editable: por producto (aplica a todas sus tallas) y por talla | ✅ |
 | Agencias de transporte editables (catálogo + alta desde el pedido) | ✅ |
-| Registro de pedidos (precio del producto, descuento opcional fijo, agencia por pedido, baja de stock) | ✅ |
+| Registro de pedidos (precio del producto, descuento opcional fijo, agencia por pedido, dirección de entrega, baja de stock) | ✅ |
 | Embudo de ventas con fechas de registro/cambio de estado y filtros | ✅ |
 | Comprobante de agencia opcional al despachar | ✅ |
+| Cancelación de pedidos con devolución de stock al inventario y motivo | ✅ |
 | Hoja de envío en PDF | ⏳ pendiente |
 | Reporte semanal + alerta predictiva de reposición (ML) | ⏳ pendiente |
 
@@ -36,15 +40,18 @@ play-one/
 │  ├─ index.js          # app Express (puerto 3001)
 │  ├─ package.json
 │  ├─ db/
-│  │   ├─ pool.js       # conexión a Neon (DATABASE_URL)
-│  │   ├─ schema.sql    # 10 tablas
-│  │   └─ seed.sql      # catálogo real Adidas (23 productos, 276 SKU),
-│  │                     # tallas con equivalentes, 60 pedidos, 2 usuarios
+│  │   ├─ pool.js          # conexión a Neon (DATABASE_URL)
+│  │   ├─ schema.sql       # 10 tablas
+│  │   ├─ seed.sql         # catálogo real Adidas (23 productos, 276 SKU),
+│  │   │                    # tallas con equivalentes, 64 pedidos (4 cancelados), 2 usuarios
+│  │   ├─ migracion-v2.sql # columnas nuevas SIN borrar datos (idempotente)
+│  │   ├─ setup.js         # npm run db:setup  (recrea todo: BORRA datos)
+│  │   └─ migrate.js       # npm run db:migrate (aplica migración: NO borra)
 │  ├─ routes/
 │  │   ├─ auth.js       # POST /api/auth/login
-│  │   ├─ skus.js       # GET /api/skus, PATCH /:id (disponible), POST /:id/reponer
-│  │   ├─ modelos.js    # GET/POST /api/modelos (con detalle de tallas)
-│  │   ├─ clientes.js   # GET/POST /api/clientes, GET /api/clientes/:dni
+│  │   ├─ skus.js       # GET /api/skus, PATCH /:id (disponible, stock_minimo), POST /:id/reponer
+│  │   ├─ modelos.js    # GET/POST /api/modelos, PATCH /:id (stock mínimo del producto)
+│  │   ├─ clientes.js   # GET/POST /api/clientes, GET /:dni, PATCH /:id (con DNI duplicado → 409)
 │  │   ├─ agencias.js   # GET/POST /api/agencias
 │  │   └─ pedidos.js    # GET/POST /api/pedidos, PATCH /:id/estado, PATCH /:id/comprobante
 │  └─ middleware/       # (pendiente)
@@ -72,6 +79,15 @@ play-one/
 3. En el SQL Editor de Neon ejecuta primero `server/db/schema.sql` y luego `server/db/seed.sql`.
    El seed trae el **catálogo real del negocio** (23 productos Adidas de fútbol con su código,
    12 tallas con equivalentes PEG/USA/cm y el stock de la plantilla Excel del curso).
+
+> **Migraciones sin borrar datos:** si la base ya existe y solo quieres aplicar los cambios
+> nuevos, ejecuta `npm run db:migrate` (desde `server/`). Aplica `db/migracion-v2.sql`,
+> que es idempotente (se puede correr varias veces) y **nunca borra datos**.
+> `npm run db:setup`, en cambio, recrea todo y **sí borra** lo que haya.
+>
+> La v2 agrega: `modelos.stock_minimo_default`, `clientes.direccion`,
+> `pedidos.distrito_destino` / `pedidos.direccion`, el índice de DNI único y
+> el estado **`cancelado`** (con `pedidos.motivo_cancelacion`).
 
 ### 2. Variables de entorno
 
@@ -118,18 +134,22 @@ curl http://localhost:3001/api/skus
 |--------|------|-------------|
 | POST | `/api/auth/login` | Devuelve un token JWT (8 h) |
 | GET | `/api/skus` | Tallas disponibles a la venta con código, equivalencias USA/cm y `alerta` |
-| PATCH | `/api/skus/:id` | Marca/desmarca la casilla de disponibilidad de la talla |
+| PATCH | `/api/skus/:id` | Marca/desmarca la casilla de disponibilidad de la talla, o cambia su `stock_minimo` |
 | POST | `/api/skus/:id/reponer` | Añade stock y registra el movimiento de entrada |
-| GET | `/api/modelos` | Catálogo con código, precio, stock y detalle de tallas (disponible/alerta) |
+| GET | `/api/modelos` | Catálogo con código, precio, stock mínimo base y detalle de tallas (disponible/alerta/mínimo) |
 | POST | `/api/modelos` | Registra un producto (código, producto, precio) con las tallas desmarcadas |
-| GET | `/api/clientes` | Directorio de clientes con su cantidad de pedidos |
+| PATCH | `/api/modelos/:id` | Cambia el stock mínimo del producto; con `aplicar_a_todas` lo propaga a sus tallas |
+| GET | `/api/clientes` | Directorio de clientes (con dirección) y su cantidad de pedidos |
 | GET | `/api/clientes/:dni` | Busca un cliente por DNI (detecta clientes ya registrados) |
-| POST | `/api/clientes` | Registra un cliente nuevo |
+| POST | `/api/clientes` | Registra un cliente nuevo (dirección obligatoria; DNI duplicado → 409) |
+| PATCH | `/api/clientes/:id` | Editar cliente (nombre, DNI, celular, destino, dirección, agencia); DNI duplicado → 409 |
 | GET | `/api/agencias` | Catálogo de agencias de transporte |
 | POST | `/api/agencias` | Agrega una agencia de transporte |
-| GET | `/api/pedidos` | Pedidos con código, agencia, comprobante, fecha de registro e historial de estados |
-| POST | `/api/pedidos` | Crea el pedido (cliente por DNI, valida talla disponible, agencia del pedido, descuento opcional, baja de stock) |
-| PATCH | `/api/pedidos/:id/estado` | Avanza el estado del pedido en el embudo |
+| GET | `/api/pedidos` | Pedidos con código, agencia, dirección de entrega, comprobante, motivo de cancelación, fechas e historial |
+| POST | `/api/pedidos` | Crea el pedido (cliente por DNI, valida talla disponible, agencia y dirección copiadas del cliente, descuento opcional, baja de stock) |
+| PATCH | `/api/pedidos/:id/estado` | Avanza el estado del pedido en el embudo (rechaza `cancelado`: usar el endpoint de cancelar) |
+| PATCH | `/api/pedidos/:id/cancelar` | Cancela un pedido contactado/reservado, guarda el motivo opcional y **devuelve la unidad al inventario** |
+| PATCH | `/api/pedidos/:id/reactivar` | Deshace una cancelación: vuelve al estado previo y descuenta la unidad otra vez |
 | PATCH | `/api/pedidos/:id/comprobante` | Guarda el comprobante de la agencia (solo despachado/entregado, opcional) |
 
 ## Usuarios de prueba (seed)
