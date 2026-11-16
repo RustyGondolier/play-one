@@ -4,6 +4,7 @@
 -- ============================================================
 
 DROP TABLE IF EXISTS envios CASCADE;
+DROP TABLE IF EXISTS consultas_sin_stock CASCADE;
 DROP TABLE IF EXISTS descuentos CASCADE;   -- tabla eliminada: el descuento vive en pedidos
 DROP TABLE IF EXISTS estados_pedido CASCADE;
 DROP TABLE IF EXISTS pedidos CASCADE;
@@ -142,6 +143,19 @@ CREATE TABLE envios (
   agencia      VARCHAR(60) NOT NULL,
   hoja_pdf_url TEXT,
   generado_en  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Intentos de pedido que quedaron SIN STOCK (el 409 de POST /api/pedidos).
+-- Materia prima del reporte semanal: demanda perdida por faltante.
+-- 'producto' es un snapshot ("Código · Talla") para poder mostrarlo
+-- aunque el catálogo cambie.
+CREATE TABLE consultas_sin_stock (
+  id        SERIAL PRIMARY KEY,
+  sku_id    INTEGER NOT NULL REFERENCES skus(id),
+  motivo    VARCHAR(20) NOT NULL DEFAULT 'sin_stock'
+            CHECK (motivo IN ('sin_stock', 'no_disponible')),
+  producto  VARCHAR(120) NOT NULL,
+  fecha     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 -- Índices útiles

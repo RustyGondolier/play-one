@@ -57,3 +57,17 @@ ALTER TABLE estados_pedido
 -- 8) Motivo de la cancelación (opcional, texto libre)
 ALTER TABLE pedidos
   ADD COLUMN IF NOT EXISTS motivo_cancelacion VARCHAR(200) NOT NULL DEFAULT '';
+
+-- 9) Consultas que quedaron SIN STOCK (409 de POST /api/pedidos).
+--    Es la materia prima del reporte semanal: cuánta demanda se
+--    perdió por no tener la talla, y de qué producto era.
+CREATE TABLE IF NOT EXISTS consultas_sin_stock (
+  id          SERIAL PRIMARY KEY,
+  sku_id      INTEGER NOT NULL REFERENCES skus(id),
+  motivo      VARCHAR(20) NOT NULL DEFAULT 'sin_stock'
+              CHECK (motivo IN ('sin_stock', 'no_disponible')),
+  producto    VARCHAR(120) NOT NULL,   -- snapshot: "Código · Talla"
+  fecha       TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_consultas_fecha
+  ON consultas_sin_stock (fecha);

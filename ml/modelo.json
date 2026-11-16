@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "algoritmo": "ridge",
+  "libreria": "scikit-learn 1.9.1 (StandardScaler + Ridge)",
+  "lambda": 1.0,
+  "caracteristicas": [
+    "media7",
+    "media28",
+    "pendiente",
+    "finde"
+  ],
+  "scaler": {
+    "media": [
+      0.23272017837235387,
+      0.22731525720656184,
+      0.000433315088487502,
+      0.427536231884058
+    ],
+    "escala": [
+      0.21862483046664644,
+      0.14071272491832332,
+      0.011976885859746782,
+      0.49472113590428296
+    ]
+  },
+  "coeficientes": [
+    0.020399932142,
+    0.069725073519,
+    -0.004433498034,
+    0.08768618214
+  ],
+  "intercepto": 0.23439241917502815,
+  "filas": 3588,
+  "sku": 26,
+  "entrenado_en": "2026-11-16T01:34:05+00:00",
+  "dataset": {
+    "archivo": "dataset.json",
+    "sha256": "dae182dd31619c03",
+    "filas": 3952
+  },
+  "ventana": {
+    "entrenamiento": [
+      28,
+      165
+    ],
+    "prueba": [
+      166,
+      179
+    ]
+  },
+  "metricas": {
+    "modelo": {
+      "n": 364,
+      "mae": 0.461213,
+      "rmse": 0.641264,
+      "wape": 1.262267
+    },
+    "linea_base": {
+      "n": 364,
+      "mae": 0.500802,
+      "rmse": 0.701338,
+      "wape": 1.370615
+    },
+    "mejora_wape_pct": 7.91,
+    "modelo_gana": true
+  }
+}

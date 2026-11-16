@@ -9,6 +9,9 @@ import modelosRoutes from './routes/modelos.js';
 import clientesRoutes from './routes/clientes.js';
 import pedidosRoutes from './routes/pedidos.js';
 import agenciasRoutes from './routes/agencias.js';
+import mlRoutes from './routes/ml.js';
+import reportesRoutes from './routes/reportes.js';
+import pool from './db/pool.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -24,10 +27,21 @@ app.use('/api/modelos', modelosRoutes);
 app.use('/api/clientes', clientesRoutes);
 app.use('/api/pedidos', pedidosRoutes);
 app.use('/api/agencias', agenciasRoutes);
+app.use('/api/ml', mlRoutes);
+app.use('/api/reportes', reportesRoutes);
 
-// Health check (útil para Render)
-app.get('/api/health', (req, res) => {
-  res.json({ ok: true, servicio: 'play-one-api' });
+// Health check (lo usa Render para saber si el servicio está vivo)
+// Devuelve el estado de la BD: si Neon está caído o el pool no
+// conecta, Render lo ve aquí y el endpoint responde 503.
+app.get('/api/health', async (req, res) => {
+  const base = { ok: true, servicio: 'play-one-api' };
+  try {
+    const { rows } = await pool.query('SELECT 1 AS ok');
+    res.json({ ...base, db: rows[0].ok === 1 ? 'ok' : 'desconocido' });
+  } catch (err) {
+    console.error('[health] sin conexión a la base:', err.message);
+    res.status(503).json({ ...base, ok: false, db: 'sin_conexion' });
+  }
 });
 
 // Sirve el build del frontend cuando exista (client/dist)

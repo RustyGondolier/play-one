@@ -972,6 +972,163 @@ legend {
   box-shadow: 0 0 0 3px var(--primario-suave);
 }
 
+/* ---------------- Reporte semanal (Avance 3) ---------------- */
+.reporte-seccion {
+  margin-bottom: 22px;
+}
+
+.reporte-subtitulo {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 10px;
+  color: var(--texto);
+}
+
+.reporte-dos-columnas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+.panel-relleno {
+  background: var(--panel);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  padding: 16px 18px;
+  box-shadow: var(--sombra);
+}
+
+.reporte-nota {
+  color: var(--texto-suave);
+  font-size: 12.5px;
+  margin-top: 12px;
+  line-height: 1.5;
+}
+
+/* Tendencia respecto de la semana anterior */
+.tendencia {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.tend-sube {
+  color: var(--verde);
+}
+
+.tend-baja {
+  color: var(--texto);      /* la caída se marca con la flecha, no con rojo:
+                               el rojo queda reservado para alertas reales */
+  font-weight: 700;
+}
+
+.tend-igual {
+  color: var(--texto-suave);
+}
+
+.tend-nuevo {
+  color: var(--primario);
+}
+
+.tend-sin-dato {
+  color: var(--texto-suave);
+  font-weight: 400;
+}
+
+/* Gráfica de barras (ventas por día) */
+.grafico-barras {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.barra-fila {
+  display: grid;
+  grid-template-columns: 38px 1fr 34px;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.barra-etiqueta {
+  color: var(--texto-suave);
+  text-transform: capitalize;
+}
+
+.barra-pista {
+  background: var(--primario-suave);
+  border-radius: 999px;
+  height: 14px;
+  overflow: hidden;
+}
+
+.barra {
+  height: 100%;
+  border-radius: 999px;
+}
+
+.barra-llena {
+  background: var(--primario);
+}
+
+.barra-futura .barra-pista {
+  background: var(--borde);
+}
+
+.barra-futura .barra-etiqueta,
+.barra-futura .barra-valor {
+  color: var(--texto-suave);
+  opacity: 0.6;
+}
+
+.barra-valor {
+  text-align: right;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Lista de consultas sin stock (demanda perdida) */
+.lista-consultas {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.lista-consultas li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 14px;
+}
+
+.consulta-producto {
+  font-weight: 600;
+}
+
+.consulta-motivo {
+  color: var(--texto-suave);
+  font-size: 12.5px;
+}
+
+/* Badge azul: riesgo medio (el rojo queda reservado para alertas) */
+.badge-azul {
+  background: var(--primario-suave);
+  color: var(--primario-oscuro);
+}
+
+/* La tarjeta de riesgo del dashboard enlaza al reporte */
+.alerta-ml {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
 /* ---------------- Responsive ---------------- */
 @media (max-width: 900px) {
   .layout {

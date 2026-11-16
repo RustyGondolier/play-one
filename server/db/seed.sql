@@ -117,12 +117,13 @@ UPDATE skus s
    AND s.talla_id  = t.id;
 
 -- ------------------------------------------------------------
--- 6. Movimiento inicial de inventario (explica el stock actual)
+-- 6. El histórico de movimientos (inventario inicial, ventas y
+--    reposiciones de los últimos 6 meses) NO se inserta aquí:
+--    lo genera server/db/historial-ventas.js después de este
+--    archivo, de forma determinista, y verifica el invariante
+--        Σ(entradas) − Σ(salidas) = stock_actual
+--    para que el log cuadre exactamente con el stock del Excel.
 -- ------------------------------------------------------------
-INSERT INTO movimientos_stock (sku_id, tipo, cantidad, motivo)
-SELECT s.id, 'entrada', s.stock_actual, 'Inventario inicial (plantilla Excel)'
-  FROM skus s
- WHERE s.disponible AND s.stock_actual > 0;
 
 -- ------------------------------------------------------------
 -- 7. Clientes (datos de prueba)
@@ -141,6 +142,8 @@ INSERT INTO clientes (nombre, dni, celular, distrito_destino, direccion, agencia
 -- 8. 60 pedidos de prueba sobre las tallas disponibles
 --    (descuento opcional: monto fijo en soles, 0 si no aplica;
 --     agencia del pedido = agencia del cliente)
+--    Cada pedido genera su 'salida' de stock en
+--    historial-ventas.js, igual que hace POST /api/pedidos.
 -- ------------------------------------------------------------
 WITH activos AS (
   SELECT row_number() OVER (ORDER BY id) - 1 AS rn, id FROM skus WHERE disponible
@@ -171,10 +174,10 @@ SELECT 1 + (g % 8) AS cliente_id,
 
 -- ------------------------------------------------------------
 -- 8b. 4 pedidos CANCELADOS: el cliente se arrepintió antes del
---     despacho. La unidad nunca salió de la bodega, por eso el
---     seed no les descuenta stock ni registra salida (mismo
---     criterio que los pedidos activos, que tampoco generan
---     movimientos: el stock real es el del Excel).
+--     despacho. Su movimiento lo genera historial-ventas.js con el
+--     mismo criterio que la API: salida al crear el pedido y
+--     'entrada' al cancelarlo (la unidad vuelve a la bodega).
+--     El stock final sigue siendo el del Excel.
 -- ------------------------------------------------------------
 WITH activos AS (
   SELECT row_number() OVER (ORDER BY id) - 1 AS rn, id FROM skus WHERE disponible

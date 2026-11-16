@@ -1,0 +1,49 @@
+# ============================================================
+# Play One — Render Blueprint
+#
+# Uso: en Render → New → Blueprint → apunta a este repositorio.
+# Este archivo define el servicio web; la base de datos NO va
+# aquí: se usa Neon (el Postgres de Render Free expira a los
+# 30 días) y su connection string se configura como secreto.
+#
+# Plan Free: 750 h/mes, el servicio duerme a los 15 min sin
+# tráfico (cold start de ~1 min). Para una demo, abrir el link
+# unos segundos antes. Ver docs/DEMO.md.
+# ============================================================
+
+services:
+  # ---- API + frontend (Express sirve client/dist) ----
+  - type: web
+    name: play-one
+    runtime: node
+    plan: free
+
+    # Raíz del repo: hay que construir client/ y correr server/
+    buildCommand: >
+      npm ci --prefix server &&
+      npm ci --prefix client &&
+      npm run build --prefix client
+    startCommand: npm start --prefix server
+
+    # Puerto que el servicio expone (lo define Express con PORT)
+    healthCheckPath: /api/health
+    port: 3001
+
+    envVars:
+      # Base de datos: se pega el connection string de Neon en el
+      # dashboard de Render (Environment → Secret Files o env var).
+      - key: DATABASE_URL
+        sync: false
+
+      # Secreto de los JWT. Generar uno nuevo con:
+      #   node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
+      - key: JWT_SECRET
+        sync: false
+
+      - key: NODE_ENV
+        value: production
+
+      # Express usa process.env.PORT; Render inyecta el suyo y
+      # esta línea es sólo el valor por defecto en local.
+      - key: PORT
+        value: 3001

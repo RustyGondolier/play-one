@@ -8,6 +8,8 @@ export default function Dashboard() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
   const [busqueda, setBusqueda] = useState('');
+  // Alerta predictiva del módulo ML (GET /api/ml/pronostico)
+  const [pronostico, setPronostico] = useState(null);
 
   function cargar() {
     api
@@ -15,6 +17,12 @@ export default function Dashboard() {
       .then(setSkus)
       .catch((err) => setError(err.message))
       .finally(() => setCargando(false));
+
+    // El pronóstico es opcional: si falla, el dashboard sigue vivo
+    api
+      .get('/ml/pronostico')
+      .then(setPronostico)
+      .catch(() => setPronostico(null));
   }
 
   useEffect(cargar, []);
@@ -32,6 +40,8 @@ export default function Dashboard() {
 
   const enAlerta = skus.filter((s) => s.alerta).length;
   const modelos = new Set(skus.map((s) => s.modelo)).size;
+  const enRiesgo = pronostico?.resumen?.en_riesgo_alto ?? null;
+  const proximo = pronostico?.resumen?.proximo_quiebre ?? null;
 
   return (
     <>
@@ -69,7 +79,34 @@ export default function Dashboard() {
           <span className="tarjeta-numero">{enAlerta}</span>
           <span>Tallas bajo el mínimo</span>
         </div>
+        <div
+          className={`tarjeta-estado ${enRiesgo > 0 ? 'en-rojo' : ''}`}
+          title={
+            proximo
+              ? `Próximo quiebre: ${proximo.codigo} · talla ${proximo.talla} (stock ${proximo.stock})`
+              : 'Pronóstico de demanda de los próximos 7 días'
+          }
+        >
+          <span className="tarjeta-numero">{enRiesgo === null ? '—' : enRiesgo}</span>
+          <span>Tallas en riesgo de quiebre (7 días)</span>
+        </div>
       </section>
+
+      {/* Alerta predictiva: las tallas que se agotan primero, según el
+          módulo ML. Sin acciones de reposición: eso es decisión del
+          propietario, no del sistema. */}
+      {pronostico && proximo && (
+        <div className="alerta alerta-info alerta-ml">
+          <strong>Alerta predictiva:</strong> la talla{' '}
+          <strong>
+            {proximo.codigo} · {proximo.talla}
+          </strong>{' '}
+          {proximo.stock > 0
+            ? `se agota en ${proximo.dias_hasta_quiebre} día(s) (stock ${proximo.stock}, demanda de ${proximo.demanda_diaria} und./día).`
+            : `ya está sin stock (demanda de ${proximo.demanda_diaria} und./día).`}{' '}
+          <Link to="/reportes">Ver el reporte semanal →</Link>
+        </div>
+      )}
 
       {cargando ? (
         <p className="vacio">Cargando stock…</p>

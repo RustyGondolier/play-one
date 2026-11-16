@@ -28,6 +28,11 @@ try {
   await correr('schema.sql');
   await correr('seed.sql');
 
+  // Histórico de ventas (dataset del ML) + verificación del invariante:
+  //   Σ(entradas) − Σ(salidas) = stock_actual  en cada SKU disponible
+  const { generarHistorial } = await import('./historial-ventas.js');
+  const { resumen } = await generarHistorial();
+
   const { rows } = await pool.query(`
     SELECT (SELECT count(*) FROM usuarios)   AS usuarios,
            (SELECT count(*) FROM tallas)     AS tallas,
@@ -43,9 +48,16 @@ try {
            (SELECT count(*) FROM pedidos WHERE estado = 'cancelado') AS cancelados,
            (SELECT count(*) FROM pedidos WHERE descuento > 0) AS con_descuento,
            (SELECT count(*) FROM pedidos WHERE comprobante IS NOT NULL) AS con_comprobante,
-           (SELECT count(*) FROM envios)     AS envios
+           (SELECT count(*) FROM envios)     AS envios,
+           (SELECT count(*) FROM movimientos_stock) AS movimientos,
+           (SELECT count(*) FROM movimientos_stock WHERE tipo = 'entrada') AS entradas,
+           (SELECT count(*) FROM movimientos_stock WHERE tipo = 'salida')  AS salidas
   `);
   console.log('✔ Base de datos lista:', rows[0]);
+  console.log(
+    `✔ Invariante del histórico: ${resumen.skus} SKU con log cuadrado ` +
+      `(mín. saldo ${resumen.ventaMinima} ≥ 0), 0 desviaciones`
+  );
 } catch (err) {
   console.error('✘ Error:', err.message);
   process.exitCode = 1;

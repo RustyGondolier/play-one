@@ -9,6 +9,11 @@ node_modules/
 dist/
 build/
 
+# Artefactos generados del módulo ML (se regeneran con
+#   node ml/exportar-dataset.js   y   python ml/entrenar.py
+# ); el artefacto entrenado ml/modelo.json SÍ se versiona
+ml/dataset.json
+
 # Logs
 *.log
 npm-debug.log*

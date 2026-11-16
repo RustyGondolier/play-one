@@ -149,12 +149,28 @@ router.post('/', async (req, res) => {
     }
     const { stock_actual, disponible, precio_base, peg, nombre: modelo, codigo } = sku.rows[0];
 
+    // Un intento de compra sin stock queda registrado para el
+    // reporte semanal (demanda perdida). Se guarda el snapshot
+    // "Código · Talla" para no depender del catálogo futuro.
+    // Se inserta DESPUÉS del rollback: si se hiciera dentro de la
+    // transacción, el rollback borraría el registro.
+    const productoSnapshot = `${codigo} · ${peg}`;
+    const registrarConsulta = async (motivo) => {
+      await pool.query(
+        `INSERT INTO consultas_sin_stock (sku_id, motivo, producto)
+         VALUES ($1, $2, $3)`,
+        [sku_id, motivo, productoSnapshot]
+      );
+    };
+
     if (!disponible) {
       await cliente.query('ROLLBACK');
+      await registrarConsulta('no_disponible');
       return res.status(409).json({ error: `La talla ${peg} de ${modelo} no está disponible` });
     }
     if (stock_actual < 1) {
       await cliente.query('ROLLBACK');
+      await registrarConsulta('sin_stock');
       return res.status(409).json({ error: `Sin stock disponible de ${modelo} · ${peg}` });
     }
     if (desc > Number(precio_base)) {
