@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import express from 'express';
 import cors from 'cors';
 import authRoutes from './routes/auth.js';
+import { autenticar } from './middleware/auth.js';
 import skusRoutes from './routes/skus.js';
 import modelosRoutes from './routes/modelos.js';
 import clientesRoutes from './routes/clientes.js';
@@ -20,19 +21,10 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
-// Rutas de la API
-app.use('/api/auth', authRoutes);
-app.use('/api/skus', skusRoutes);
-app.use('/api/modelos', modelosRoutes);
-app.use('/api/clientes', clientesRoutes);
-app.use('/api/pedidos', pedidosRoutes);
-app.use('/api/agencias', agenciasRoutes);
-app.use('/api/ml', mlRoutes);
-app.use('/api/reportes', reportesRoutes);
-
-// Health check (lo usa Render para saber si el servicio está vivo)
-// Devuelve el estado de la BD: si Neon está caído o el pool no
-// conecta, Render lo ve aquí y el endpoint responde 503.
+// ---- Rutas ----
+// Públicas: /api/health la consulta Render (no expone datos) y
+// /api/auth/login es la que entrega el token. Van antes del
+// middleware de sesión.
 app.get('/api/health', async (req, res) => {
   const base = { ok: true, servicio: 'play-one-api' };
   try {
@@ -43,6 +35,21 @@ app.get('/api/health', async (req, res) => {
     res.status(503).json({ ...base, ok: false, db: 'sin_conexion' });
   }
 });
+
+app.use('/api/auth', authRoutes);
+
+// Todo lo demás exige un JWT válido (los datos de clientes son PII).
+// Montado ANTES que las rutas de negocio: un token faltante o que no
+// verifica corta la petición con 401 sin llegar a la base de datos.
+app.use('/api', autenticar);
+
+app.use('/api/skus', skusRoutes);
+app.use('/api/modelos', modelosRoutes);
+app.use('/api/clientes', clientesRoutes);
+app.use('/api/pedidos', pedidosRoutes);
+app.use('/api/agencias', agenciasRoutes);
+app.use('/api/ml', mlRoutes);
+app.use('/api/reportes', reportesRoutes);
 
 // Sirve el build del frontend cuando exista (client/dist)
 const clientDist = path.join(__dirname, '..', 'client', 'dist');

@@ -5,6 +5,9 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
+    // Sin token no hay sesión, aunque quede un 'user' viejo en
+    // localStorage: así Protected redirige a /login en el arranque.
+    if (!localStorage.getItem('token')) return null;
     try {
       return JSON.parse(localStorage.getItem('user')) || null;
     } catch {
