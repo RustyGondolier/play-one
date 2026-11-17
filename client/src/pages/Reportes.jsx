@@ -236,7 +236,7 @@ export default function Reportes() {
             <div className="alerta alerta-info">
               Modelo <strong>{reporte.pronostico.origen}</strong> ·{' '}
               {riesgo.length} tallas en riesgo alto/medio · generado{' '}
-              {new Date(reporte.pronostico.generado_en).toLocaleString('es-PE')}
+              {new Date(reporte.pronostico.generado_en).toLocaleString('es-PE', { timeZone: 'America/Lima' })}
               {reporte.pronostico.resumen?.unidades_sugeridas > 0 && (
                 <>
                   {' '}
