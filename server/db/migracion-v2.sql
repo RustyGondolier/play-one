@@ -1,5 +1,5 @@
 -- ============================================================
--- Play One — Migración v2 (NO borra datos)
+-- Play One - Migración v2 (NO borra datos)
 -- Se puede ejecutar más de una vez (es idempotente).
 -- Uso: npm run db:migrate   (desde la carpeta server/)
 -- ============================================================

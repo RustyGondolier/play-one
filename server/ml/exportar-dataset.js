@@ -1,5 +1,5 @@
 // ============================================================
-// Play One — Exporta el dataset del modelo a JSON
+// Play One - Exporta el dataset del modelo a JSON
 //
 // Genera ml/dataset.json, el archivo que consume ml/entrenar.py
 // (en Colab o en local). Así el entrenamiento NO necesita acceso a
@@ -45,11 +45,11 @@ try {
   fs.writeFileSync(salida, JSON.stringify(archivo));
   const kb = Math.round(fs.statSync(salida).size / 1024);
   console.log(
-    `✔ ${path.relative(process.cwd(), salida)}: ${archivo.filas} filas × ` +
+    `${path.relative(process.cwd(), salida)}: ${archivo.filas} filas × ` +
       `${caracteristicas.length} características (${archivo.sku} SKU, ${kb} KB)`
   );
 } catch (err) {
-  console.error('✘ Error:', err.message);
+  console.error('Error:', err.message);
   process.exitCode = 1;
 } finally {
   await pool.end();

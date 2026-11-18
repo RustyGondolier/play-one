@@ -1,5 +1,5 @@
 // ============================================================
-// Play One — Histórico de ventas (dataset para el módulo de ML)
+// Play One - Histórico de ventas (dataset para el módulo de ML)
 //
 // El negocio NO tiene exportable su histórico de ventas: la plantilla
 // sólo trae el stock actual. Sin embargo, para entrenar y evaluar el
@@ -97,7 +97,7 @@ function eventosDeVentas(serie, inicio, semilla) {
   const eventos = [];
   for (let d = 0; d < DIAS; d += 1) {
     for (let u = 0; u < serie[d]; u += 1) {
-      const hora = 10 + Math.floor(rnd() * 12); // 10:00 – 21:00
+      const hora = 10 + Math.floor(rnd() * 12); // 10:00 - 21:00
       const minuto = Math.floor(rnd() * 60);
       eventos.push({
         fecha: inicio + d * MS_DIA + hora * 3600000 + minuto * 60000,
@@ -451,7 +451,7 @@ export async function generarHistorial({ cliente = pool, verbose = true } = {}) 
 
   if (verbose) {
     console.log(
-      `✔ Histórico de ${DIAS} días: ${resumen.movimientos} movimientos ` +
+      `Histórico de ${DIAS} días: ${resumen.movimientos} movimientos ` +
         `(${resumen.entradas} entradas / ${resumen.salidas} salidas), ` +
         `${resumen.compras} reposiciones, invariante en 0 SKU con desviación`
     );
@@ -465,7 +465,7 @@ if (import.meta.url === pathToFileURL(process.argv[1] || '').href) {
   try {
     await generarHistorial();
   } catch (err) {
-    console.error('✘ Error:', err.message);
+    console.error('Error:', err.message);
     process.exitCode = 1;
   } finally {
     await pool.end();

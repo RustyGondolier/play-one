@@ -164,18 +164,18 @@ export default function Pedidos() {
           {esCancelado && <span className="badge badge-cancelado">Cancelado</span>}
         </div>
 
-        {p.agencia && <small className="tarjeta-agencia">🚚 {p.agencia}</small>}
+        {p.agencia && <small className="tarjeta-agencia">{p.agencia}</small>}
         {p.direccion && (
           <small className="tarjeta-agencia" title="Dirección de entrega del pedido">
-            📍 {p.direccion}
+            {p.direccion}
             {p.distrito_destino ? ` · ${p.distrito_destino}` : ''}
           </small>
         )}
 
         {esCancelado && (
           <small className="tarjeta-cancelacion">
-            ✖ Cancelado {p.fecha_cancelacion ? `el ${p.fecha_cancelacion}` : ''}
-            {p.motivo_cancelacion ? ` — ${p.motivo_cancelacion}` : ''}
+            Cancelado {p.fecha_cancelacion ? `el ${p.fecha_cancelacion}` : ''}
+            {p.motivo_cancelacion ? ` - ${p.motivo_cancelacion}` : ''}
           </small>
         )}
 
@@ -184,7 +184,7 @@ export default function Pedidos() {
           <ul>
             {(p.historial || []).map((h, i) => (
               <li key={i}>
-                <strong>{NOMBRES_ESTADO[h.estado] || h.estado}</strong> — {h.fecha}
+                <strong>{NOMBRES_ESTADO[h.estado] || h.estado}</strong> - {h.fecha}
               </li>
             ))}
           </ul>
@@ -216,7 +216,7 @@ export default function Pedidos() {
               onClick={() => reactivar(p)}
               title="Deshacer la cancelación y volver al estado anterior"
             >
-              ↩ Reactivar
+              Reactivar
             </button>
           ) : (
             <button
@@ -239,7 +239,7 @@ export default function Pedidos() {
               onClick={() => cancelar(p)}
               title="Cancelar el pedido (la unidad vuelve al inventario)"
             >
-              ✕ Cancelar
+              Cancelar
             </button>
           )}
         </div>
@@ -251,7 +251,7 @@ export default function Pedidos() {
     <>
       <header className="pagina-titulo">
         <div>
-          <h1>Pedidos — embudo de ventas</h1>
+          <h1>Pedidos - embudo de ventas</h1>
           <p>contactado → reservado → despachado → entregado</p>
         </div>
       </header>
@@ -331,7 +331,7 @@ export default function Pedidos() {
               en una franja colapsada, con su motivo y la opción de reactivar. */}
           <details className="cancelados" open={cancelados.length > 0 && hayFiltros}>
             <summary>
-              ✖ Cancelados ({cancelados.length}) — la unidad volvió al inventario
+              Cancelados ({cancelados.length}) - la unidad volvió al inventario
             </summary>
             <div className="cancelados-lista">
               {cancelados.map((p) => tarjeta(p))}

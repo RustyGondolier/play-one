@@ -12,7 +12,7 @@ const SELECT_CLIENTE = `
    GROUP BY c.id
 `;
 
-// GET /api/clientes — lista de clientes con su cantidad de pedidos
+// GET /api/clientes - lista de clientes con su cantidad de pedidos
 router.get('/', async (req, res) => {
   try {
     const { rows } = await pool.query(`${SELECT_CLIENTE} ORDER BY c.nombre`);
@@ -23,7 +23,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET /api/clientes/:dni — busca por DNI (para detectar clientes ya registrados)
+// GET /api/clientes/:dni - busca por DNI (para detectar clientes ya registrados)
 router.get('/:dni', async (req, res) => {
   try {
     const { rows } = await pool.query(
@@ -39,7 +39,7 @@ router.get('/:dni', async (req, res) => {
   }
 });
 
-// POST /api/clientes — registra un cliente nuevo
+// POST /api/clientes - registra un cliente nuevo
 // body: { nombre, dni, celular, distrito_destino, direccion, agencia }
 router.post('/', async (req, res) => {
   const { nombre, dni, celular, distrito_destino, direccion, agencia } = req.body || {};
@@ -67,7 +67,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-// PATCH /api/clientes/:id — edita los datos del cliente
+// PATCH /api/clientes/:id - edita los datos del cliente
 // body: { nombre, dni, celular, distrito_destino, direccion, agencia }
 // El DNI se puede corregir, pero no puede repetirse (409).
 router.patch('/:id', async (req, res) => {

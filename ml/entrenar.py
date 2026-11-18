@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Play One — Entrenamiento del modelo de pronóstico de demanda
+Play One - Entrenamiento del modelo de pronóstico de demanda
 ============================================================
 
 Toma ml/dataset.json (lo genera server/ml/exportar-dataset.js) y
@@ -163,7 +163,7 @@ def linea_base(series, dias, corte):
 
 # --------------------------------------------------------------------------
 def main():
-    # Windows usa cp1252 en la consola: sin esto, imprimir ✔ o λ truena
+    # Windows usa cp1252 en la consola: sin esto, imprimir o λ truena
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
@@ -262,7 +262,7 @@ def main():
     with open(args.salida, "w", encoding="utf-8") as f:
         json.dump(artefacto, f, ensure_ascii=False, indent=2)
 
-    print(f"✔ {os.path.basename(args.salida)}  [{libreria}]  λ={args.alpha}")
+    print(f"{os.path.basename(args.salida)}  [{libreria}]  λ={args.alpha}")
     print(f"   {artefacto['filas']} filas de entrenamiento · "
           f"{len(i_prueba)} de prueba · {len(caracteristicas)} características")
     print(f"   coeficientes: {[round(c, 4) for c in w]}  intercepto {intercepto:.4f}")

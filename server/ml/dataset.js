@@ -1,5 +1,5 @@
 // ============================================================
-// Play One — Dataset del modelo (desde la base de datos)
+// Play One - Dataset del modelo (desde la base de datos)
 //
 // Arma la serie diaria de ventas por SKU (ventana DIAS días) y la
 // tabla de entrenamiento: una fila por (talla, día) con sus

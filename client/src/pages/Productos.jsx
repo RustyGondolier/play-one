@@ -373,8 +373,8 @@ export default function Productos() {
                                     />
                                   </td>
                                   <td className="celda-talla">{t.peg}</td>
-                                  <td>{t.usa ?? '—'}</td>
-                                  <td>{t.cm ?? '—'}</td>
+                                  <td>{t.usa ?? '-'}</td>
+                                  <td>{t.cm ?? '-'}</td>
                                   <td className="celda-stock">{t.stock_actual}</td>
                                   <td>
                                     <input
@@ -403,7 +403,7 @@ export default function Productos() {
                                         ＋ Reponer
                                       </button>
                                     ) : (
-                                      <small className="nota">—</small>
+                                      <small className="nota">-</small>
                                     )}
                                   </td>
                                 </tr>

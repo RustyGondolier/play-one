@@ -1,5 +1,5 @@
 // ============================================================
-// Play One — Evaluación del modelo (backtesting)
+// Play One - Evaluación del modelo (backtesting)
 //
 // Entrena con el PASADO y evalúa con el futuro, como corresponde
 // en series temporales: se ajusta con los días hasta el corte y se

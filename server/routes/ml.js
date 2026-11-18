@@ -1,5 +1,5 @@
 // ============================================================
-// Play One — Rutas del módulo de ML (alerta predictiva)
+// Play One - Rutas del módulo de ML (alerta predictiva)
 //
 //   GET /api/ml/pronostico   pronóstico de demanda y quiebre de
 //                            stock por talla (7 días)
@@ -19,7 +19,7 @@ import { evaluar } from '../ml/evaluacion.js';
 
 const router = Router();
 
-// GET /api/ml/pronostico — alerta predictiva de quiebre de stock
+// GET /api/ml/pronostico - alerta predictiva de quiebre de stock
 router.get('/pronostico', async (req, res) => {
   try {
     const pronostico = await pronosticarStock();
@@ -30,7 +30,7 @@ router.get('/pronostico', async (req, res) => {
   }
 });
 
-// GET /api/ml/evaluacion — ¿qué tan bien funciona el modelo?
+// GET /api/ml/evaluacion - ¿qué tan bien funciona el modelo?
 // Entrena con el pasado y evalúa con el último mes (sin mezclar
 // información futura en el entrenamiento).
 router.get('/evaluacion', async (req, res) => {

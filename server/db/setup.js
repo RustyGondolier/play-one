@@ -20,7 +20,7 @@ if (!process.env.DATABASE_URL) {
 
 async function correr(archivo) {
   const sql = fs.readFileSync(path.join(__dirname, archivo), 'utf8');
-  console.log(`▶ Ejecutando ${archivo}…`);
+  console.log(`Ejecutando ${archivo}…`);
   await pool.query(sql);
 }
 
@@ -53,13 +53,13 @@ try {
            (SELECT count(*) FROM movimientos_stock WHERE tipo = 'entrada') AS entradas,
            (SELECT count(*) FROM movimientos_stock WHERE tipo = 'salida')  AS salidas
   `);
-  console.log('✔ Base de datos lista:', rows[0]);
+  console.log('Base de datos lista:', rows[0]);
   console.log(
-    `✔ Invariante del histórico: ${resumen.skus} SKU con log cuadrado ` +
+    `Invariante del histórico: ${resumen.skus} SKU con log cuadrado ` +
       `(mín. saldo ${resumen.ventaMinima} ≥ 0), 0 desviaciones`
   );
 } catch (err) {
-  console.error('✘ Error:', err.message);
+  console.error('Error:', err.message);
   process.exitCode = 1;
 } finally {
   await pool.end();

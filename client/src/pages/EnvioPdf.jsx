@@ -34,17 +34,17 @@ export default function EnvioPdf() {
         <div className="hoja-seccion">
           <h3>Cliente</h3>
           <div className="hoja-datos">
-            <p><span>Nombre:</span> —</p>
-            <p><span>DNI:</span> —</p>
-            <p><span>Celular:</span> —</p>
+            <p><span>Nombre:</span> -</p>
+            <p><span>DNI:</span> -</p>
+            <p><span>Celular:</span> -</p>
           </div>
         </div>
 
         <div className="hoja-seccion">
           <h3>Destino</h3>
           <div className="hoja-datos">
-            <p><span>Distrito:</span> —</p>
-            <p><span>Agencia:</span> —</p>
+            <p><span>Distrito:</span> -</p>
+            <p><span>Agencia:</span> -</p>
           </div>
         </div>
 
@@ -76,7 +76,7 @@ export default function EnvioPdf() {
 
       <div className="formulario-acciones">
         <button className="btn btn-primario" disabled title="Se habilita en la semana 14">
-          ⬇ Descargar PDF
+          Descargar PDF
         </button>
       </div>
     </>

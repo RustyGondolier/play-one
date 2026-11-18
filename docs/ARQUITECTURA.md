@@ -1,4 +1,4 @@
-# Play One — Arquitectura del sistema
+# Play One - Arquitectura del sistema
 
 Diagrama de despliegue y de flujo de datos. Se usa en el informe (APA 7) y en la demo.
 
@@ -10,12 +10,12 @@ flowchart TB
         UI["React 18 + Vite<br/>Login · Dashboard · Pedidos ·<br/>Clientes · Productos · Reportes"]
     end
 
-    subgraph Render["Render Free — S/ 0"]
+    subgraph Render["Render Free - S/ 0"]
         Express["Node.js + Express (puerto 3001)<br/>API REST + sirve client/dist<br/>/api/health → estado de la BD"]
         ML["server/ml/<br/>inferencia: aplica ml/modelo.json<br/>(reentrena en Node si falta el artefacto)"]
     end
 
-    subgraph Neon["Neon Free — PostgreSQL"]
+    subgraph Neon["Neon Free - PostgreSQL"]
         BD[("11 tablas<br/>skus · pedidos · clientes ·<br/>movimientos_stock · estados_pedido ·<br/>consultas_sin_stock · …")]
     end
 

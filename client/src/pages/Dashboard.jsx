@@ -87,7 +87,7 @@ export default function Dashboard() {
               : 'Pronóstico de demanda de los próximos 7 días'
           }
         >
-          <span className="tarjeta-numero">{enRiesgo === null ? '—' : enRiesgo}</span>
+          <span className="tarjeta-numero">{enRiesgo === null ? '-' : enRiesgo}</span>
           <span>Tallas en riesgo de quiebre (7 días)</span>
         </div>
       </section>

@@ -22,7 +22,7 @@ const archivo = 'migracion-v2.sql';
 
 try {
   const sql = fs.readFileSync(path.join(__dirname, archivo), 'utf8');
-  console.log(`▶ Ejecutando ${archivo}…`);
+  console.log(`Ejecutando ${archivo}…`);
   await pool.query(sql);
 
   const { rows } = await pool.query(`
@@ -31,9 +31,9 @@ try {
            (SELECT count(*) FROM pedidos WHERE direccion <> '') AS pedidos_con_direccion,
            (SELECT count(*) FROM modelos)    AS modelos
   `);
-  console.log('✔ Migración aplicada:', rows[0]);
+  console.log('Migración aplicada:', rows[0]);
 } catch (err) {
-  console.error('✘ Error en la migración:', err.message);
+  console.error('Error en la migración:', err.message);
   process.exitCode = 1;
 } finally {
   await pool.end();

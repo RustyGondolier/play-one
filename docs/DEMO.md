@@ -1,6 +1,6 @@
-# Play One — Guion de demo (sustentación)
+# Play One - Guion de demo (sustentación)
 
-Duración sugerida: **8–10 minutos**. Cubre lo que se evalúa en el Avance 3 (IA/ML +
+Duración sugerida: **8-10 minutos**. Cubre lo que se evalúa en el Avance 3 (IA/ML +
 reportes) y repasa el sistema completo para que se vea como un producto terminado.
 
 ## Antes de empezar (2 min)
@@ -19,31 +19,31 @@ reportes) y repasa el sistema completo para que se vea como un producto terminad
 
 > Play One vende zapas de fútbol Adidas por TikTok Live y hoy lleva el stock en Excel y
 > las hojas de envío a mano. El sistema reemplaza eso con inventario en tiempo real,
-> un embudo de pedidos, y —lo nuevo en este avance— un **reporte semanal** y una
+> un embudo de pedidos, y -lo nuevo en este avance- un **reporte semanal** y una
 > **alerta predictiva** que dice de qué talla se va a quedar sin stock.
 
 ### 2. Login y dashboard (1 min)
 
 - Entra con `propietario` / `playone2026`.
 - Muestra las 4 tarjetas: tallas en stock, modelos, **bajo el mínimo** y
-  **tallas en riesgo de quiebre (7 días)** — esta última viene del modelo.
+  **tallas en riesgo de quiebre (7 días)** - esta última viene del modelo.
 - Señala la **alerta predictiva** debajo de las tarjetas: *«la talla KJ6711 · 40.5 ya está
   sin stock…»*.
 - Resalta que el rojo **solo aparece en alertas** (bajo mínimo, riesgo alto, errores).
 
 ### 3. Reporte semanal (2 min) ← **corazón del Avance 3**
 
-Pestaña **📈 Reportes**:
+Pestaña **Reportes**:
 
 1. **Semana en curso vs. anterior** (Semana 46 vs. 45) con la **tendencia** de cada
    indicador: unidades vendidas, ingresos, pedidos, pendientes, consultas sin stock,
    días hasta el próximo quiebre.
-2. **Ventas por día** — la gráfica de barras muestra el pico de viernes/sábado
+2. **Ventas por día** - la gráfica de barras muestra el pico de viernes/sábado
    (los lives de TikTok).
-3. **Demanda perdida** — los intentos de compra que respondieron *409 sin stock*.
-   > Para que haya datos: crear un pedido desde **➕ Nuevo pedido** con una talla agotada
+3. **Demanda perdida** - los intentos de compra que respondieron *409 sin stock*.
+   > Para que haya datos: crear un pedido desde **Nuevo pedido** con una talla agotada
    > (por ejemplo `KJ6711 · 40.5`, que está en 0) y ver cómo queda registrado aquí.
-4. **Alerta predictiva** — las 5 tallas más urgentes con stock, demanda/día, días hasta
+4. **Alerta predictiva** - las 5 tallas más urgentes con stock, demanda/día, días hasta
    agotarse y sugerencia de reposición. El badge dice el **origen del modelo**
    (`artefacto` = entrenado con scikit-learn).
 
@@ -51,7 +51,7 @@ Pestaña **📈 Reportes**:
 
 - **Dataset:** 180 días × 26 tallas = **3.952 filas**. *«El negocio no tenía histórico
   de ventas exportable, así que generamos uno **declarado como simulado**: misma
-  estacionalidad de los lives (vie-dom ×2,5), tendencia +6 % y ruido de Poisson — y
+  estacionalidad de los lives (vie-dom ×2,5), tendencia +6 % y ruido de Poisson - y
   verificamos que el log cuadre **exactamente** con el stock real del Excel:
   0 desviaciones.»*
 - **Modelo:** regresión **Ridge** (λ=1) con `StandardScaler`, las 4 características
@@ -64,7 +64,7 @@ Pestaña **📈 Reportes**:
 - **Pruebas:** `npm test` → 24 pruebas, incluidas dos que comparan los coeficientes de
   Python y Node con tolerancia 1e-6.
 
-### 5. El resto del sistema (2–3 min)
+### 5. El resto del sistema (2-3 min)
 
 Recorrido rápido por lo ya entregado:
 

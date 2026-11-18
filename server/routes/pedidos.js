@@ -9,7 +9,7 @@ const ORDEN_ESTADOS = ['contactado', 'reservado', 'despachado', 'entregado'];
 // desde despachado el paquete ya viaja y no se cancela.
 const ESTADOS_CANCELABLES = ['contactado', 'reservado'];
 
-// GET /api/pedidos — lista para el tablero del embudo:
+// GET /api/pedidos - lista para el tablero del embudo:
 // incluye agencia, comprobante, motivo de cancelación, fecha de registro
 // y el historial con la fecha de cada cambio de estado.
 router.get('/', async (req, res) => {
@@ -67,7 +67,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// POST /api/pedidos — crea el pedido:
+// POST /api/pedidos - crea el pedido:
 //  - detecta/crea el cliente por DNI
 //  - toma el precio del producto (modelos.precio_base)
 //  - descuento opcional de monto fijo
@@ -212,7 +212,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-// PATCH /api/pedidos/:id/estado  { estado } — avanza el embudo (solo hacia adelante)
+// PATCH /api/pedidos/:id/estado  { estado } - avanza el embudo (solo hacia adelante)
 // 'cancelado' NO entra por aquí: la cancelación tiene su propio endpoint
 // porque devuelve la unidad al inventario.
 router.patch('/:id/estado', async (req, res) => {
@@ -327,7 +327,7 @@ router.patch('/:id/cancelar', async (req, res) => {
   }
 });
 
-// PATCH /api/pedidos/:id/reactivar — deshace una cancelación:
+// PATCH /api/pedidos/:id/reactivar - deshace una cancelación:
 // el pedido vuelve al estado previo (contactado/reservado, según su
 // historial) y la unidad se descuenta del inventario otra vez.
 router.patch('/:id/reactivar', async (req, res) => {

@@ -12,7 +12,7 @@ if (!process.env.JWT_SECRET) {
 
 /**
  * Verifica una contraseña contra el hash guardado (scrypt con formato
- * "scrypt$saltHex$hashHex", generado con node:crypto — sin dependencias).
+ * "scrypt$saltHex$hashHex", generado con node:crypto - sin dependencias).
  */
 function verificarPassword(password, almacenado) {
   const [algoritmo, salt, hash] = (almacenado || '').split('$');

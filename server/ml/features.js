@@ -1,5 +1,5 @@
 // ============================================================
-// Play One — Características del modelo de pronóstico
+// Play One - Características del modelo de pronóstico
 //
 // Mismas fórmulas que ml/entrenar.py: cualquier cambio hay que
 // hacerlo en los DOS lados (el test de paridad lo verifica).

@@ -17,7 +17,7 @@ const CLASE_TENDENCIA = {
 
 function formatoValor(indicador) {
   const v = indicador.actual;
-  if (v === null || v === undefined) return '—';
+  if (v === null || v === undefined) return '-';
   if (indicador.clave === 'ingresos') return `S/ ${Number(v).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   if (indicador.decimales) return Number(v).toFixed(indicador.decimales);
   return String(v);
@@ -25,7 +25,7 @@ function formatoValor(indicador) {
 
 function formatoAnterior(indicador) {
   const v = indicador.anterior;
-  if (v === null || v === undefined) return '—';
+  if (v === null || v === undefined) return '-';
   if (indicador.clave === 'ingresos') return `S/ ${Number(v).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   if (indicador.decimales) return Number(v).toFixed(indicador.decimales);
   return String(v);
@@ -60,7 +60,7 @@ function GraficoVentas({ dias }) {
               style={{ width: `${(d.unidades / maximo) * 100}%` }}
             />
           </div>
-          <span className="barra-valor">{d.futuro ? '—' : d.unidades}</span>
+          <span className="barra-valor">{d.futuro ? '-' : d.unidades}</span>
         </div>
       ))}
     </div>
@@ -105,7 +105,7 @@ export default function Reportes() {
         <div>
           <h1>Reporte semanal</h1>
           <p>
-            Semana {semana.numero} · {semana.rango} — comparado con la semana {anterior.numero} (
+            Semana {semana.numero} · {semana.rango} - comparado con la semana {anterior.numero} (
             {anterior.rango})
           </p>
         </div>
@@ -144,7 +144,7 @@ export default function Reportes() {
         </div>
         <div className={`tarjeta-estado ${quiebre.actual !== null && quiebre.actual <= 7 ? 'en-rojo' : ''}`}>
           <span className="tarjeta-numero">
-            {quiebre.actual === null ? '—' : formatoValor(quiebre)}
+            {quiebre.actual === null ? '-' : formatoValor(quiebre)}
           </span>
           <span>Días hasta el próximo quiebre</span>
         </div>
@@ -281,7 +281,7 @@ export default function Reportes() {
                         <td>{Number(p.demanda_diaria).toFixed(3)}</td>
                         <td>
                           {p.dias_hasta_quiebre === null
-                            ? '—'
+                            ? '-'
                             : Number(p.dias_hasta_quiebre).toFixed(1)}
                         </td>
                         <td>{p.sugerencia_reposicion} und.</td>

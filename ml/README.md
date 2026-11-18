@@ -1,4 +1,4 @@
-# Play One — Módulo de IA/ML: pronóstico de demanda y alerta de quiebre
+# Play One - Módulo de IA/ML: pronóstico de demanda y alerta de quiebre
 
 > **Resumen para el informe:** modelo de regresión (Ridge) que pronostica la demanda diaria
 > de cada talla durante 7 días y avisa cuándo se va a agotar. Se entrena **offline** con
@@ -31,7 +31,7 @@ por complejidad desproporcionada:
 
 | Campo | Valor |
 | --- | --- |
-| Origen | `movimientos_stock` (tipo `salida`) — ver §5 |
+| Origen | `movimientos_stock` (tipo `salida`) - ver §5 |
 | Ventana | **180 días** (6 meses) × **26 tallas disponibles** |
 | Filas | **3.952** = 26 SKU × (180 − 28) días con historial suficiente |
 | Frecuencia | diaria, unidades enteras |
@@ -147,8 +147,8 @@ con el futuro. Nunca se mezcla información futura en el entrenamiento.
 
 | Ventana | Días | Filas |
 | --- | --- | --- |
-| Entrenamiento | 28 – 165 | 3.588 |
-| Prueba (futura) | 166 – 179 (las 2 últimas semanas) | 364 |
+| Entrenamiento | 28 - 165 | 3.588 |
+| Prueba (futura) | 166 - 179 (las 2 últimas semanas) | 364 |
 
 ### 5.1 Línea base
 
@@ -162,9 +162,9 @@ Si el modelo no le gana a esto, se dice en el informe y se descarta el modelo.
 
 ### 5.2 Métricas
 
-- **MAE** — error absoluto medio (unidades/día).
-- **RMSE** — penaliza los errores grandes.
-- **WAPE** — Σ|error| / Σ|real|. Se usa **WAPE y no MAPE** porque la demanda diaria
+- **MAE** - error absoluto medio (unidades/día).
+- **RMSE** - penaliza los errores grandes.
+- **WAPE** - Σ|error| / Σ|real|. Se usa **WAPE y no MAPE** porque la demanda diaria
   tiene muchos ceros y el MAPE se dispara (división entre cero).
 
 ### 5.3 Resultados (dataset de 180 días)
@@ -183,7 +183,7 @@ Coeficientes aprendidos (intercepto = 0,2344):
 | +0,0204 | +0,0697 | −0,0044 | +0,0877 |
 
 **Interpretación:** el dummy de fin de semana (+0,088) y la media de 28 días (+0,070 por
-unidad de demanda) son las variables que más empujan la predicción — coherente con que la
+unidad de demanda) son las variables que más empujan la predicción - coherente con que la
 demanda la concentren los lives de TikTok. La `pendiente` entra con signo negativo y casi
 nulo: en una serie de 180 días con ruido de Poisson la pendiente local es ruido, y la
 regularización la encoge (es exactamente para lo que sirve λ).

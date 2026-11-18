@@ -1,5 +1,5 @@
 // ============================================================
-// Play One — Inferencia: pronóstico de quiebre de stock
+// Play One - Inferencia: pronóstico de quiebre de stock
 //
 // Camino principal (MLOps estándar "entrenamiento offline →
 // inferencia online"):

@@ -30,7 +30,6 @@ export default function Login() {
     <div className="login-pantalla">
       <form className="login-tarjeta" onSubmit={handleSubmit}>
         <div className="login-logo">
-          <span className="logo-icon">👟</span>
           <h1>Play One</h1>
           <p>Sistema de gestión operativa</p>
         </div>

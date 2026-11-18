@@ -1,5 +1,5 @@
 // ============================================================
-// Play One — Reporte semanal (idea 5 de la matriz de priorización)
+// Play One - Reporte semanal (idea 5 de la matriz de priorización)
 //
 //   GET /api/reportes/semanal
 //
@@ -31,14 +31,14 @@ function lunesDe(fecha) {
   return new Date(d.getTime() - desdeLunes * MS_DIA);
 }
 
-/** Etiqueta legible de la semana ISO (p. ej. "Semana 46 · 9–15 nov 2026") */
+/** Etiqueta legible de la semana ISO (p. ej. "Semana 46 · 9-15 nov 2026") */
 function etiquetaSemana(inicio) {
   const fin = new Date(inicio.getTime() + 6 * MS_DIA);
   const MES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'set', 'oct', 'nov', 'dic'];
   const mismaSemana = inicio.getMonth() === fin.getMonth();
   const rango = mismaSemana
-    ? `${inicio.getDate()}–${fin.getDate()} ${MES[fin.getMonth()]}`
-    : `${inicio.getDate()} ${MES[inicio.getMonth()]} – ${fin.getDate()} ${MES[fin.getMonth()]}`;
+    ? `${inicio.getDate()}-${fin.getDate()} ${MES[fin.getMonth()]}`
+    : `${inicio.getDate()} ${MES[inicio.getMonth()]} - ${fin.getDate()} ${MES[fin.getMonth()]}`;
   return { rango: `${rango} ${fin.getFullYear()}`, iso: semanaISO(inicio) };
 }
 

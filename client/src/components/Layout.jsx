@@ -2,12 +2,12 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 
 const MENU = [
-  { to: '/', label: 'Dashboard de stock', icon: '📊' },
-  { to: '/pedidos/nuevo', label: 'Nuevo pedido', icon: '➕' },
-  { to: '/pedidos', label: 'Pedidos', icon: '🗂️' },
-  { to: '/clientes', label: 'Clientes', icon: '👥' },
-  { to: '/productos', label: 'Productos', icon: '👟' },
-  { to: '/reportes', label: 'Reportes', icon: '📈' },
+  { to: '/', label: 'Dashboard de stock' },
+  { to: '/pedidos/nuevo', label: 'Nuevo pedido' },
+  { to: '/pedidos', label: 'Pedidos' },
+  { to: '/clientes', label: 'Clientes' },
+  { to: '/productos', label: 'Productos' },
+  { to: '/reportes', label: 'Reportes' },
 ];
 
 export default function Layout({ children }) {
@@ -23,7 +23,6 @@ export default function Layout({ children }) {
     <div className="layout">
       <aside className="sidebar">
         <div className="logo">
-          <span className="logo-icon">👟</span>
           <div>
             <strong>Play One</strong>
             <small>Gestión operativa</small>
@@ -38,7 +37,7 @@ export default function Layout({ children }) {
               end={item.to === '/'}
               className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
             >
-              <span>{item.icon}</span> {item.label}
+              {item.label}
             </NavLink>
           ))}
         </nav>

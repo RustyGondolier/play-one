@@ -1,5 +1,5 @@
 // ============================================================
-// Play One — Regresión lineal sin dependencias (Node puro)
+// Play One - Regresión lineal sin dependencias (Node puro)
 //
 // Implementa OLS y Ridge por mínimos cuadrados, resolviendo el
 // sistema normal con eliminación de Gauss y pivoteo parcial.

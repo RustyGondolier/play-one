@@ -3,7 +3,7 @@ import pool from '../db/pool.js';
 
 const router = Router();
 
-// GET /api/modelos — catálogo con código, precio, stock y el
+// GET /api/modelos - catálogo con código, precio, stock y el
 // detalle de TODAS las tallas del catálogo (con equivalentes
 // USA/cm, stock y si están marcadas como disponibles)
 router.get('/', async (req, res) => {
@@ -47,7 +47,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// POST /api/modelos — registra un producto nuevo
+// POST /api/modelos - registra un producto nuevo
 // body: { codigo, nombre, precio_base }
 // Crea el producto con TODAS las tallas del catálogo desmarcadas
 // (en 0 y sin alerta); después se marcan las tallas disponibles.

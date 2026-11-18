@@ -179,7 +179,7 @@ export default function PedidoNuevo() {
 
       <form className="formulario" onSubmit={enviar}>
         <fieldset>
-          <legend>Cliente — busca por DNI</legend>
+          <legend>Cliente - busca por DNI</legend>
           <div className="campo-grid">
             <label>
               DNI *
@@ -278,7 +278,7 @@ export default function PedidoNuevo() {
             <label>
               Modelo *
               <select value={modeloId} onChange={(e) => cambiarModelo(e.target.value)} required>
-                <option value="">— Selecciona —</option>
+                <option value="">- Selecciona -</option>
                 {modelos.map((m) => (
                   <option key={m.id} value={m.id}>
                     {m.codigo} · {m.nombre}
@@ -295,11 +295,11 @@ export default function PedidoNuevo() {
                 required
               >
                 <option value="">
-                  {modeloId ? '— Selecciona —' : 'Elige primero el modelo'}
+                  {modeloId ? '- Selecciona -' : 'Elige primero el modelo'}
                 </option>
                 {tallasDelModelo.map((s) => (
                   <option key={s.id} value={s.id}>
-                    {s.talla} · USA {s.usa ?? '—'} (stock {s.stock_actual})
+                    {s.talla} · USA {s.usa ?? '-'} (stock {s.stock_actual})
                   </option>
                 ))}
               </select>
@@ -325,7 +325,7 @@ export default function PedidoNuevo() {
             {precio > 0
               ? desc > 0
                 ? `Total del pedido: S/ ${total.toFixed(2)} (precio S/ ${precio.toFixed(2)} − descuento S/ ${desc.toFixed(2)})`
-                : `Total del pedido: S/ ${precio.toFixed(2)} — sin descuento`
+                : `Total del pedido: S/ ${precio.toFixed(2)} - sin descuento`
               : 'El precio viene guardado con el producto registrado.'}
           </small>
         </fieldset>

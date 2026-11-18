@@ -1,5 +1,5 @@
 -- ============================================================
--- Play One — Esquema de base de datos (PostgreSQL / Neon)
+-- Play One - Esquema de base de datos (PostgreSQL / Neon)
 -- Ejecutar primero este archivo y luego seed.sql
 -- ============================================================
 

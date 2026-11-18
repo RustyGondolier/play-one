@@ -1,5 +1,5 @@
 -- ============================================================
--- Play One — Datos iniciales (zapatillas de fútbol Adidas)
+-- Play One - Datos iniciales (zapatillas de fútbol Adidas)
 -- Productos, códigos y tallas tomados de la plantilla
 -- "PLANTILLAS PLAYONE.xlsx" (hojas STOCK COMPARTIDO y
 -- STOCK EN ESTUDIO). Ejecutar DESPUÉS de schema.sql

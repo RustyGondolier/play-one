@@ -1,32 +1,32 @@
-# Play One — Sistema de gestión operativa
+# Play One - Sistema de gestión operativa
 
 Prototipo web para la transformación digital de **Play One**, microempresa peruana que vende **zapatillas de fútbol** por canales digitales (captación en TikTok → ventas en WhatsApp → despacho por agencia).
 
-El sistema es una **herramienta interna de gestión** (1–2 usuarios) que reemplaza el Excel y la hoja de envío manual con la que hoy opera el negocio.
+El sistema es una **herramienta interna de gestión** (1-2 usuarios) que reemplaza el Excel y la hoja de envío manual con la que hoy opera el negocio.
 
 ## Módulos
 
 | Módulo | Estado |
 |--------|--------|
-| Autenticación (propietario / ayudante) | ✅ |
-| Inventario en tiempo real con alertas de stock mínimo | ✅ |
-| Reposición de stock por talla (entrada de mercadería con registro) | ✅ |
-| Catálogo real de zapatillas Adidas de fútbol: código, precio, tallas con equivalentes PEG/USA/cm y filtros | ✅ |
-| Disponibilidad por talla (casilla: desmarcada → gris, no se vende y no genera alerta) | ✅ |
-| Directorio de clientes con detección por DNI | ✅ |
-| Edición de clientes (incluido el DNI con control de duplicado) | ✅ |
-| Dirección exacta de entrega en el cliente (obligatoria) y copiada al pedido | ✅ |
-| Stock mínimo editable: por producto (aplica a todas sus tallas) y por talla | ✅ |
-| Agencias de transporte editables (catálogo + alta desde el pedido) | ✅ |
-| Registro de pedidos (precio del producto, descuento opcional fijo, agencia por pedido, dirección de entrega, baja de stock) | ✅ |
-| Embudo de ventas con fechas de registro/cambio de estado y filtros | ✅ |
-| Comprobante de agencia opcional al despachar | ✅ |
-| Cancelación de pedidos con devolución de stock al inventario y motivo | ✅ |
-| Hoja de envío en PDF | ⏳ pendiente |
-| Reporte semanal (indicadores vs. semana anterior + ventas por día) | ✅ |
-| Alerta predictiva de reposición (ML: Ridge sobre 180 días) | ✅ |
-| Registro de demanda perdida (intentos de compra sin stock) | ✅ |
-| Deploy en Render (S/ 0) | ✅ |
+| Autenticación (propietario / ayudante) | Sí |
+| Inventario en tiempo real con alertas de stock mínimo | Sí |
+| Reposición de stock por talla (entrada de mercadería con registro) | Sí |
+| Catálogo real de zapatillas Adidas de fútbol: código, precio, tallas con equivalentes PEG/USA/cm y filtros | Sí |
+| Disponibilidad por talla (casilla: desmarcada → gris, no se vende y no genera alerta) | Sí |
+| Directorio de clientes con detección por DNI | Sí |
+| Edición de clientes (incluido el DNI con control de duplicado) | Sí |
+| Dirección exacta de entrega en el cliente (obligatoria) y copiada al pedido | Sí |
+| Stock mínimo editable: por producto (aplica a todas sus tallas) y por talla | Sí |
+| Agencias de transporte editables (catálogo + alta desde el pedido) | Sí |
+| Registro de pedidos (precio del producto, descuento opcional fijo, agencia por pedido, dirección de entrega, baja de stock) | Sí |
+| Embudo de ventas con fechas de registro/cambio de estado y filtros | Sí |
+| Comprobante de agencia opcional al despachar | Sí |
+| Cancelación de pedidos con devolución de stock al inventario y motivo | Sí |
+| Hoja de envío en PDF | Pendiente |
+| Reporte semanal (indicadores vs. semana anterior + ventas por día) | Sí |
+| Alerta predictiva de reposición (ML: Ridge sobre 180 días) | Sí |
+| Registro de demanda perdida (intentos de compra sin stock) | Sí |
+| Deploy en Render (S/ 0) | Sí |
 
 ## Stack
 
@@ -236,7 +236,7 @@ Ver [`docs/DEMO.md`](docs/DEMO.md) para el guion de la sustentación.
 
 > No hay dominio propio ni verificación de correo: el campo `email` se usa como usuario simple.
 
-## Cronograma (Avance 3 — Semana 15)
+## Cronograma (Avance 3 - Semana 15)
 
 | Semana | Entregable |
 |--------|------------|
@@ -247,4 +247,4 @@ Ver [`docs/DEMO.md`](docs/DEMO.md) para el guion de la sustentación.
 
 ## Contexto académico
 
-Innovación y Transformación Digital — Grupo 7, Ingeniería de Sistemas e Informática (UNSA, 2026). Avance de Proyecto Final 3.
+Innovación y Transformación Digital - Grupo 7, Ingeniería de Sistemas e Informática (UNSA, 2026). Avance de Proyecto Final 3.

@@ -3,7 +3,7 @@ import pool from '../db/pool.js';
 
 const router = Router();
 
-// GET /api/agencias — catálogo de agencias de transporte
+// GET /api/agencias - catálogo de agencias de transporte
 router.get('/', async (req, res) => {
   try {
     const { rows } = await pool.query('SELECT id, nombre FROM agencias ORDER BY nombre');
@@ -14,7 +14,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// POST /api/agencias — agrega una agencia de transporte  { nombre }
+// POST /api/agencias - agrega una agencia de transporte  { nombre }
 router.post('/', async (req, res) => {
   const nombre = String(req.body?.nombre || '').trim();
   if (!nombre) {

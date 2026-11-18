@@ -1,5 +1,5 @@
 /* ============================================================
-   Play One — estilos globales
+   Play One - estilos globales
    Colores de marca: azul #0F70FF (R15 V112 A255),
    fondo #FDFEFF (R253 V254 A255). El rojo queda solo
    para alertas semánticas (stock bajo mínimo, errores).
@@ -58,10 +58,6 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
-}
-
-.logo-icon {
-  font-size: 26px;
 }
 
 .logo strong {
@@ -394,10 +390,6 @@ body {
 .login-logo {
   text-align: center;
   margin-bottom: 6px;
-}
-
-.login-logo .logo-icon {
-  font-size: 40px;
 }
 
 .login-logo h1 {
